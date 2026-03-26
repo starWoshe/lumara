@@ -84,6 +84,9 @@ importers:
       '@auth/prisma-adapter':
         specifier: ^2.4.1
         version: 2.11.1(@prisma/client@5.22.0(prisma@5.22.0))
+      '@lumara/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@lumara/database':
         specifier: workspace:*
         version: link:../../packages/database
