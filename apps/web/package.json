@@ -16,6 +16,7 @@
     "@lumara/shared": "workspace:*",
     "@lumara/ui": "workspace:*",
     "@lumara/database": "workspace:*",
+    "@lumara/agents": "workspace:*",
     "next-auth": "^4.24.7",
     "@auth/prisma-adapter": "^2.4.1",
     "@supabase/supabase-js": "^2.43.1",
