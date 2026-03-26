@@ -1,0 +1,247 @@
+// Prisma схема для LUMARA Academy
+// Документація: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =========================================
+// КОРИСТУВАЧІ ТА ПРОФІЛІ
+// =========================================
+
+model User {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String    @unique
+  name      String?
+  image     String?
+  tenantId  String?   @db.Uuid @map("tenant_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Зв'язки
+  profile       Profile?
+  conversations Conversation[]
+  subscriptions Subscription[]
+  enrollments   Enrollment[]
+
+  @@map("users")
+}
+
+model Profile {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @unique @db.Uuid @map("user_id")
+  birthDate   DateTime? @map("birth_date")
+  birthTime   String?   @map("birth_time")
+  birthPlace  String?   @map("birth_place")
+  language    String    @default("uk")
+  timezone    String    @default("Europe/Kiev")
+  tenantId    String?   @db.Uuid @map("tenant_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// =========================================
+// AI АГЕНТИ
+// =========================================
+
+enum AgentType {
+  LUNA   // Астрологія
+  ARCAS  // Таро / Оракул
+  NUMI   // Нумерологія
+  UMBRA  // Езо-психологія
+}
+
+enum AIModel {
+  CLAUDE_CLAUDE_OPUS_4_6
+  CLAUDE_SONNET_4_6
+  GPT4
+}
+
+model Agent {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type        AgentType @unique
+  name        String
+  description String?
+  model       AIModel   @default(CLAUDE_SONNET_4_6)
+  promptFile  String    @map("prompt_file")
+  isActive    Boolean   @default(true) @map("is_active")
+  tokenLimit  Int       @default(4000) @map("token_limit")
+  tenantId    String?   @db.Uuid @map("tenant_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  conversations Conversation[]
+
+  @@map("agents")
+}
+
+// =========================================
+// СЕСІЇ ТА ПОВІДОМЛЕННЯ
+// =========================================
+
+model Conversation {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid @map("user_id")
+  agentId   String    @db.Uuid @map("agent_id")
+  title     String?
+  tokenUsed Int       @default(0) @map("token_used")
+  tenantId  String?   @db.Uuid @map("tenant_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent    Agent     @relation(fields: [agentId], references: [id])
+  messages Message[]
+
+  @@map("conversations")
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model Message {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String      @db.Uuid @map("conversation_id")
+  role           MessageRole
+  content        String
+  tokenCount     Int?        @map("token_count")
+  tenantId       String?     @db.Uuid @map("tenant_id")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  deletedAt      DateTime?   @map("deleted_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// =========================================
+// ПІДПИСКИ (STRIPE)
+// =========================================
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+enum SubscriptionPlan {
+  FREE
+  BASIC
+  PRO
+  ELITE
+}
+
+model Subscription {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String             @db.Uuid @map("user_id")
+  stripeCustomerId     String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  stripePriceId        String?            @map("stripe_price_id")
+  plan                 SubscriptionPlan   @default(FREE)
+  status               SubscriptionStatus @default(INACTIVE)
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  tenantId             String?            @db.Uuid @map("tenant_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+  deletedAt            DateTime?          @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+// =========================================
+// КУРСИ ТА ЗАПИСИ
+// =========================================
+
+model Course {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String    @unique
+  title       String
+  description String?
+  coverImage  String?   @map("cover_image")
+  agentType   AgentType? @map("agent_type")
+  isPublished Boolean   @default(false) @map("is_published")
+  price       Int       @default(0) // у центах
+  tenantId    String?   @db.Uuid @map("tenant_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+model Enrollment {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @db.Uuid @map("user_id")
+  courseId    String    @db.Uuid @map("course_id")
+  completedAt DateTime? @map("completed_at")
+  tenantId    String?   @db.Uuid @map("tenant_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+// =========================================
+// КОНТЕНТ ДЛЯ СОЦМЕРЕЖ
+// =========================================
+
+enum ContentStatus {
+  DRAFT
+  QUEUED
+  PUBLISHED
+  FAILED
+}
+
+enum ContentPlatform {
+  INSTAGRAM
+  TELEGRAM
+  TWITTER
+  FACEBOOK
+}
+
+model ContentQueue {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agentType   AgentType       @map("agent_type")
+  platform    ContentPlatform
+  content     String
+  mediaUrl    String?         @map("media_url")
+  status      ContentStatus   @default(DRAFT)
+  scheduledAt DateTime?       @map("scheduled_at")
+  publishedAt DateTime?       @map("published_at")
+  tenantId    String?         @db.Uuid @map("tenant_id")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  deletedAt   DateTime?       @map("deleted_at")
+
+  @@map("content_queue")
+}

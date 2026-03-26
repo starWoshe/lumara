@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 3%;
+    --foreground: 280 20% 95%;
+  }
+
+  body {
+    @apply bg-[#0a0a0f] text-[#f0ecf8] antialiased;
+  }
+}
+
+@layer utilities {
+  /* Містичний градієнт для LUMARA */
+  .lumara-gradient {
+    @apply bg-gradient-to-br from-lumara-950 via-[#1a0a2e] to-[#0a0a0f];
+  }
+
+  /* Скляний ефект для карток */
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl;
+  }
+
+  /* Світіння для інтерактивних елементів */
+  .glow-purple {
+    @apply shadow-[0_0_15px_rgba(192,64,240,0.4)];
+  }
+}
