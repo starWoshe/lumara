@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import { Inter, Playfair_Display } from 'next/font/google'
+import { SessionProvider } from '@/components/providers/SessionProvider'
 import './globals.css'
 
 // Шрифти для LUMARA Academy
@@ -30,14 +32,12 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="uk" className={`${inter.variable} ${playfair.variable}`}>
-      <body className="lumara-gradient min-h-screen">{children}</body>
+      <body className="lumara-gradient min-h-screen">
+        <SessionProvider>{children}</SessionProvider>
+      </body>
     </html>
   )
 }

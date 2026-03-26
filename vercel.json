@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "buildCommand": "cd ../.. && pnpm run build --filter=@lumara/web",
+  "installCommand": "cd ../.. && pnpm install",
+  "outputDirectory": "apps/web/.next",
+  "framework": "nextjs",
+  "regions": ["fra1"]
+}
