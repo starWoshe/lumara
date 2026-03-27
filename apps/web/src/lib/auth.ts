@@ -1,11 +1,8 @@
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import type { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { db } from '@lumara/database'
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(db),
-
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -15,7 +12,7 @@ export const authOptions: NextAuthOptions = {
 
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 днів
+    maxAge: 30 * 24 * 60 * 60,
   },
 
   pages: {
@@ -23,40 +20,53 @@ export const authOptions: NextAuthOptions = {
     error: '/login',
   },
 
-  events: {
-    async createUser({ user }) {
-      if (user.id) {
+  callbacks: {
+    // Зберігаємо юзера в БД при першому вході
+    async jwt({ token, user, account }) {
+      // Перший вхід — user і account є в token
+      if (user && account) {
         try {
-          await db.profile.create({
-            data: { userId: user.id, language: 'uk', timezone: 'Europe/Kiev' },
-          })
+          const existingUser = await db.user.findUnique({ where: { email: user.email! } })
+
+          if (existingUser) {
+            token.userId = existingUser.id
+          } else {
+            const newUser = await db.user.create({
+              data: {
+                email: user.email!,
+                name: user.name,
+                image: user.image,
+              },
+            })
+            token.userId = newUser.id
+
+            // Створюємо профіль
+            await db.profile.create({
+              data: { userId: newUser.id, language: 'uk', timezone: 'Europe/Kiev' },
+            }).catch(() => null)
+          }
         } catch (e) {
-          console.error('Помилка створення профілю:', e)
+          console.error('JWT callback error:', e)
         }
       }
+      return token
     },
-  },
 
-  callbacks: {
-    // Додаємо userId до сесії з JWT токену
     async session({ session, token }) {
-      if (session.user && token.sub) {
-        session.user.id = token.sub
+      if (session.user && token.userId) {
+        session.user.id = token.userId as string
       }
       return session
     },
 
-    // Редирект після входу
     async redirect({ url, baseUrl }) {
       if (url.startsWith(baseUrl)) return url
       if (url.startsWith('/')) return `${baseUrl}${url}`
       return `${baseUrl}/dashboard`
     },
   },
-
 }
 
-// Розширення типу Session для TypeScript
 declare module 'next-auth' {
   interface Session {
     user: {
