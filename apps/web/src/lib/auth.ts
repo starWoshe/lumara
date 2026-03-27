@@ -25,10 +25,10 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    // Додаємо userId до сесії для зручного доступу
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id
+    // Додаємо userId до сесії з JWT токену
+    async session({ session, token }) {
+      if (session.user && token.sub) {
+        session.user.id = token.sub
       }
       return session
     },
