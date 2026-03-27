@@ -1,12 +1,7 @@
-import { PrismaAdapter } from '@auth/prisma-adapter'
 import type { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
-import { db } from '@lumara/database'
 
 export const authOptions: NextAuthOptions = {
-  // Prisma адаптер — сесії зберігаються в Supabase
-  adapter: PrismaAdapter(db) as NextAuthOptions['adapter'],
-
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -41,24 +36,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
 
-  events: {
-    // Створюємо профіль при першому вході
-    async createUser({ user }) {
-      if (user.id) {
-        try {
-          await db.profile.create({
-            data: {
-              userId: user.id,
-              language: 'uk',
-              timezone: 'Europe/Kiev',
-            },
-          })
-        } catch (error) {
-          console.error('Помилка створення профілю:', error)
-        }
-      }
-    },
-  },
 }
 
 // Розширення типу Session для TypeScript
