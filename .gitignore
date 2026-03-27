@@ -33,3 +33,10 @@ packages/database/generated
 
 # Testing
 coverage
+
+# Playwright MCP
+.playwright-mcp/
+
+# Build artifacts
+tsconfig.tsbuildinfo
+next-env.d.ts
