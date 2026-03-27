@@ -1,7 +1,6 @@
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import type { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
-import EmailProvider from 'next-auth/providers/email'
 import { db } from '@lumara/database'
 
 export const authOptions: NextAuthOptions = {
@@ -9,22 +8,9 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db) as NextAuthOptions['adapter'],
 
   providers: [
-    // Основний провайдер — Google
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-    // Альтернатива — Email magic link
-    EmailProvider({
-      server: {
-        host: 'smtp.resend.com',
-        port: 465,
-        auth: {
-          user: 'resend',
-          pass: process.env.RESEND_API_KEY!,
-        },
-      },
-      from: 'LUMARA Academy <noreply@lumara.fyi>',
     }),
   ],
 
