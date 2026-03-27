@@ -1,4 +1,10 @@
-import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
+const { PrismaPlugin } = require('@prisma/nextjs-monorepo-workaround-plugin')
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -13,6 +19,13 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
+    outputFileTracingRoot: path.join(__dirname, '../../'),
+    outputFileTracingIncludes: {
+      '/**': [
+        'node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/**',
+        'node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client/libquery_engine*',
+      ],
+    },
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
