@@ -88,11 +88,12 @@ def send_to_telegram(text: str, bot_token: str, channel_id: str) -> dict:
     payload = {
         'chat_id': channel_id,
         'text': text,
-        'parse_mode': 'HTML',
         'disable_web_page_preview': True,
     }
 
     response = httpx.post(url, json=payload, timeout=30)
+    if not response.is_success:
+        print(f'Telegram API відповідь: {response.text}')
     response.raise_for_status()
     return response.json()
 
