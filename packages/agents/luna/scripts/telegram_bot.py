@@ -274,13 +274,19 @@ def main():
         'OPENAI_API_KEY',
         'TELEGRAM_BOT_TOKEN',
         'TELEGRAM_CHANNEL_ID',
-        'GOOGLE_SERVICE_ACCOUNT_JSON',
-        'GOOGLE_DRIVE_FOLDER_ID',
     ]
     missing = [v for v in required_env if not os.environ.get(v)]
     if missing:
         print(f'❌ Відсутні змінні середовища: {", ".join(missing)}')
         sys.exit(1)
+
+    # Google Drive — опційно (якщо не налаштовано, пропускаємо)
+    drive_enabled = bool(
+        os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON') and
+        os.environ.get('GOOGLE_DRIVE_FOLDER_ID')
+    )
+    if not drive_enabled:
+        print('ℹ️  Google Drive не налаштовано — Instagram контент не зберігатиметься')
 
     bot_token = os.environ['TELEGRAM_BOT_TOKEN']
     channel_id = os.environ['TELEGRAM_CHANNEL_ID']
@@ -302,13 +308,15 @@ def main():
     print('─' * 50)
     print()
 
-    # 3. Адаптація для Instagram
-    print('📸 Адаптація тексту для Instagram...')
-    instagram_text = generate_instagram_post(post_text)
-    print('─' * 50)
-    print(instagram_text)
-    print('─' * 50)
-    print()
+    # 3. Адаптація для Instagram (тільки якщо Drive налаштовано)
+    instagram_text = None
+    if drive_enabled:
+        print('📸 Адаптація тексту для Instagram...')
+        instagram_text = generate_instagram_post(post_text)
+        print('─' * 50)
+        print(instagram_text)
+        print('─' * 50)
+        print()
 
     # 4. Генерація промпту і зображення
     print('🎨 Генерація промпту для зображення...')
@@ -321,12 +329,16 @@ def main():
     print(f'URL зображення: {image_url[:60]}...')
     print()
 
-    # 5. Збереження Instagram контенту в Google Drive
-    print('💾 Збереження Instagram контенту в Google Drive...')
-    drive_links = save_instagram_content_to_drive(image_bytes, instagram_text, date_str)
-    print(f'🖼️  Зображення: {drive_links["image_link"]}')
-    print(f'📝 Текст:       {drive_links["text_link"]}')
-    print()
+    # 5. Збереження Instagram контенту в Google Drive (якщо налаштовано)
+    if drive_enabled:
+        print('💾 Збереження Instagram контенту в Google Drive...')
+        drive_links = save_instagram_content_to_drive(image_bytes, instagram_text, date_str)
+        print(f'🖼️  Зображення: {drive_links["image_link"]}')
+        print(f'📝 Текст:       {drive_links["text_link"]}')
+        print()
+    else:
+        print('⏭️  Пропуск Google Drive (секрети не задано)')
+        print()
 
     # 6. Публікація в перший Telegram канал
     publish_to_telegram_channel(image_url, post_text, bot_token, channel_id, 'Канал 1')
