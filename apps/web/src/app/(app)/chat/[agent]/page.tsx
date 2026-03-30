@@ -51,7 +51,10 @@ export default function ChatPage() {
         body: JSON.stringify({ agentType, content: text, conversationId }),
       })
 
-      if (!res.ok) throw new Error('Помилка сервера')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || `HTTP ${res.status}`)
+      }
 
       // Стрімінг відповіді
       const reader = res.body!.getReader()
@@ -85,8 +88,9 @@ export default function ChatPage() {
           }
         }
       }
-    } catch {
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Вибач, сталась помилка. Спробуй ще раз.' }])
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Невідома помилка'
+      setMessages((prev) => [...prev, { role: 'assistant', content: `Помилка: ${msg}` }])
     } finally {
       setIsLoading(false)
       textareaRef.current?.focus()
