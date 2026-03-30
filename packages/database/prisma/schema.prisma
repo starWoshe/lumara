@@ -17,7 +17,7 @@ datasource db {
 // =========================================
 
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(uuid())
   email         String    @unique
   emailVerified DateTime? @map("email_verified")
   name          String?
@@ -43,7 +43,7 @@ model User {
 // =========================================
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id @default(uuid())
   userId            String  @map("user_id")
   type              String
   provider          String
@@ -63,7 +63,7 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   sessionToken String   @unique @map("session_token")
   userId       String   @map("user_id")
   expires      DateTime
@@ -83,7 +83,7 @@ model VerificationToken {
 }
 
 model Profile {
-  id          String    @id @default(cuid())
+  id          String    @id @default(uuid())
   userId      String    @unique @map("user_id")
   birthDate   DateTime? @map("birth_date")
   birthTime   String?   @map("birth_time")
@@ -118,7 +118,7 @@ enum AIModel {
 }
 
 model Agent {
-  id          String    @id @default(cuid())
+  id          String    @id @default(uuid())
   type        AgentType @unique
   name        String
   description String?
@@ -141,7 +141,7 @@ model Agent {
 // =========================================
 
 model Conversation {
-  id        String    @id @default(cuid())
+  id        String    @id @default(uuid())
   userId    String    @map("user_id")
   agentId   String    @map("agent_id")
   title     String?
@@ -165,7 +165,7 @@ enum MessageRole {
 }
 
 model Message {
-  id             String      @id @default(cuid())
+  id             String      @id @default(uuid())
   conversationId String      @map("conversation_id")
   role           MessageRole
   content        String
@@ -200,7 +200,7 @@ enum SubscriptionPlan {
 }
 
 model Subscription {
-  id                   String             @id @default(cuid())
+  id                   String             @id @default(uuid())
   userId               String             @map("user_id")
   stripeCustomerId     String?            @unique @map("stripe_customer_id")
   stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
@@ -224,7 +224,7 @@ model Subscription {
 // =========================================
 
 model Course {
-  id          String    @id @default(cuid())
+  id          String    @id @default(uuid())
   slug        String    @unique
   title       String
   description String?
@@ -243,7 +243,7 @@ model Course {
 }
 
 model Enrollment {
-  id          String    @id @default(cuid())
+  id          String    @id @default(uuid())
   userId      String    @map("user_id")
   courseId    String    @map("course_id")
   completedAt DateTime? @map("completed_at")
@@ -278,7 +278,7 @@ enum ContentPlatform {
 }
 
 model ContentQueue {
-  id          String          @id @default(cuid())
+  id          String          @id @default(uuid())
   agentType   AgentType       @map("agent_type")
   platform    ContentPlatform
   content     String
