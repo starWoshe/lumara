@@ -47,6 +47,30 @@ export const authOptions: NextAuthOptions = {
           console.error('JWT callback error:', e)
         }
       }
+
+      // Fallback: якщо userId відсутній в токені (наприклад, попередній вхід без БД)
+      if (!token.userId && token.email) {
+        try {
+          const dbUser = await db.user.upsert({
+            where: { email: token.email as string },
+            update: {},
+            create: {
+              email: token.email as string,
+              name: token.name as string | undefined,
+              image: (token.picture as string | undefined) ?? (token.image as string | undefined),
+            },
+          })
+          token.userId = dbUser.id
+          await db.profile.upsert({
+            where: { userId: dbUser.id },
+            update: {},
+            create: { userId: dbUser.id, language: 'uk', timezone: 'Europe/Kiev' },
+          }).catch(() => null)
+        } catch (e) {
+          console.error('JWT fallback error:', e)
+        }
+      }
+
       return token
     },
 
