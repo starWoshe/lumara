@@ -14,9 +14,19 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen lumara-gradient">
+    <div className="min-h-screen lumara-gradient relative">
+      {/* Фон — замок академії */}
+      <Image
+        src="/academy-castle.png"
+        alt=""
+        fill
+        className="object-cover object-bottom opacity-10 pointer-events-none"
+        priority
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/40 pointer-events-none" />
+
       {/* Бокова навігація */}
-      <aside className="fixed left-0 top-0 h-full w-64 border-r border-white/5 bg-black/20 backdrop-blur-md z-40 hidden md:flex flex-col">
+      <aside className="fixed left-0 top-0 h-full w-64 border-r border-white/5 bg-black/20 backdrop-blur-md z-40 hidden md:flex flex-col relative">
         {/* Логотип */}
         <div className="p-6 border-b border-white/5 flex items-center gap-3">
           <Image src="/lumara-logo.png" alt="LUMARA" width={36} height={36} className="rounded-full flex-shrink-0" />
@@ -66,7 +76,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Основний контент */}
-      <main className="md:pl-64 min-h-screen">
+      <main className="md:pl-64 min-h-screen relative z-10">
         {children}
       </main>
     </div>
