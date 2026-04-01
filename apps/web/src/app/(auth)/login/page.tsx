@@ -3,6 +3,7 @@
 import { signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { useState, Suspense } from 'react'
+import Image from 'next/image'
 
 function LoginForm() {
   const searchParams = useSearchParams()
@@ -18,8 +19,9 @@ function LoginForm() {
   return (
     <div className="glass-card p-10 w-full max-w-md text-center animate-fade-in relative z-10">
       {/* Логотип */}
-      <div className="mb-8">
-        <span className="font-display text-5xl font-bold bg-gradient-to-r from-lumara-300 to-gold-400 bg-clip-text text-transparent">
+      <div className="mb-8 flex flex-col items-center">
+        <Image src="/lumara-logo.webp" alt="LUMARA Academy" width={80} height={80} className="mb-3" priority />
+        <span className="font-display text-4xl font-bold bg-gradient-to-r from-lumara-300 to-gold-400 bg-clip-text text-transparent">
           LUMARA
         </span>
         <p className="text-lumara-300/70 tracking-[0.3em] text-xs uppercase mt-1">Academy</p>

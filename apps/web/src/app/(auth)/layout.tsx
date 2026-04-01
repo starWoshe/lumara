@@ -1,9 +1,22 @@
-// Layout для сторінок авторизації — центрований, з містичним фоном
+import Image from 'next/image'
+
+// Layout для сторінок авторизації — з фоном замку академії
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen lumara-gradient flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Фон — замок академії */}
+      <Image
+        src="/academy-castle.png"
+        alt=""
+        fill
+        className="object-cover object-center"
+        priority
+      />
+      {/* Темний оверлей */}
+      <div className="absolute inset-0 bg-black/65" />
+
       {/* Декоративні зірки */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-10">
         {[...Array(20)].map((_, i) => (
           <div
             key={i}
@@ -18,7 +31,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           />
         ))}
       </div>
-      {children}
+
+      <div className="relative z-20 w-full flex items-center justify-center">
+        {children}
+      </div>
     </div>
   )
 }

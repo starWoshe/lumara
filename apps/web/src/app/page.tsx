@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 const agents = [
   {
@@ -51,9 +52,12 @@ export default function HomePage() {
       {/* Навігація */}
       <nav className="fixed top-0 w-full z-50 border-b border-white/5 backdrop-blur-md bg-black/20">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="font-display text-2xl font-bold bg-gradient-to-r from-lumara-300 to-gold-400 bg-clip-text text-transparent">
-            LUMARA
-          </span>
+          <div className="flex items-center gap-3">
+            <Image src="/lumara-logo.webp" alt="LUMARA" width={36} height={36} className="rounded-full" />
+            <span className="font-display text-2xl font-bold bg-gradient-to-r from-lumara-300 to-gold-400 bg-clip-text text-transparent">
+              LUMARA
+            </span>
+          </div>
           <Link
             href="/login"
             className="bg-gradient-to-r from-lumara-600 to-lumara-500 text-white text-sm font-medium px-5 py-2 rounded-xl hover:from-lumara-500 hover:to-lumara-400 transition-all"
@@ -64,7 +68,17 @@ export default function HomePage() {
       </nav>
 
       {/* Hero секція */}
-      <section className="pt-32 pb-24 px-6 text-center relative overflow-hidden">
+      <section className="pt-32 pb-24 px-6 text-center relative overflow-hidden min-h-screen flex flex-col justify-center">
+        {/* Фон — замок академії */}
+        <Image
+          src="/academy-castle.png"
+          alt=""
+          fill
+          className="object-cover object-bottom opacity-25"
+          priority
+        />
+        {/* Градієнт поверх замку */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90 pointer-events-none" />
         {/* Фонове світіння */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-lumara-600/10 rounded-full blur-3xl pointer-events-none" />
 

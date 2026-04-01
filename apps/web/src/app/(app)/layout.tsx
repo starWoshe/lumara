@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import Link from 'next/link'
+import Image from 'next/image'
 
 // Layout для авторизованої зони — з навігацією
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -17,7 +18,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       {/* Бокова навігація */}
       <aside className="fixed left-0 top-0 h-full w-64 border-r border-white/5 bg-black/20 backdrop-blur-md z-40 hidden md:flex flex-col">
         {/* Логотип */}
-        <div className="p-6 border-b border-white/5">
+        <div className="p-6 border-b border-white/5 flex items-center gap-3">
+          <Image src="/lumara-logo.webp" alt="LUMARA" width={36} height={36} className="rounded-full flex-shrink-0" />
           <span className="font-display text-2xl font-bold bg-gradient-to-r from-lumara-300 to-gold-400 bg-clip-text text-transparent">
             LUMARA
           </span>
