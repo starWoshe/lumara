@@ -15,15 +15,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen lumara-gradient relative">
-      {/* Фон — замок академії */}
+      {/* Фон — зоряне небо */}
       <Image
-        src="/academy-castle.png"
+        src="/starry-sky.jpg"
         alt=""
         fill
-        className="object-cover object-bottom opacity-10 pointer-events-none"
+        className="object-cover object-center opacity-40 pointer-events-none"
         priority
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/40 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/50 pointer-events-none" />
 
       {/* Бокова навігація */}
       <aside className="fixed left-0 top-0 h-full w-64 border-r border-white/5 bg-black/20 backdrop-blur-md z-40 hidden md:flex flex-col relative">
