@@ -17,9 +17,9 @@ export default async function DashboardPage() {
   const firstName = session?.user.name?.split(' ')[0] ?? 'Мандрівнику'
 
   return (
-    <div className="p-6 md:p-10 max-w-4xl">
+    <div className="pt-4 px-6 pb-6 md:pt-6 md:px-10 md:pb-10 max-w-4xl">
       {/* Привітання */}
-      <div className="mb-10">
+      <div className="mb-6">
         <h1 className="font-display text-3xl md:text-4xl font-bold text-white mb-2">
           Вітаю, {firstName} 🌟
         </h1>
