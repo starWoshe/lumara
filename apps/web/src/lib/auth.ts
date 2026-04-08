@@ -25,7 +25,7 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     // Зберігаємо юзера в БД при першому вході
-    async jwt({ token, user, account, req }) {
+    async jwt({ token, user, account }) {
       // Перший вхід — user і account є в token
       if (user && account) {
         try {
