@@ -26,7 +26,7 @@ export async function GET() {
         take: 1,
       },
       _count: {
-        select: { conversations: true, messages: true },
+        select: { conversations: true },
       },
     },
     orderBy: { createdAt: 'desc' },

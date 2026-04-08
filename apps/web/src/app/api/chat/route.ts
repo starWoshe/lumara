@@ -9,7 +9,35 @@ import { FREE_MESSAGES_LIMIT, PLANS } from '@/lib/stripe'
 
 export const maxDuration = 60
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+// Ліниве створення клієнта — уникає проблем при відсутньому ключі під час збірки
+function getAnthropicClient() {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY не встановлено')
+  return new Anthropic({ apiKey })
+}
+
+// Retry з exponential backoff для помилки 529 (overloaded)
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelayMs = 1000
+): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      const isOverloaded =
+        err instanceof Anthropic.APIError && (err.status === 529 || err.status === 503)
+      if (!isOverloaded || attempt === maxRetries) throw err
+      const delay = baseDelayMs * 2 ** attempt + Math.random() * 500
+      console.warn(`[chat/route] Anthropic перевантажений (529), спроба ${attempt + 1}/${maxRetries}, затримка ${Math.round(delay)}ms`)
+      await new Promise((r) => setTimeout(r, delay))
+    }
+  }
+  throw lastError
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -122,45 +150,56 @@ export async function POST(req: NextRequest) {
     }))
     messages.push({ role: 'user', content })
 
-    // Стрімінг відповіді від Claude
-    const stream = anthropic.messages.stream({
-      model: aiModel,
-      max_tokens: tokenLimit,
-      system: systemPrompt,
-      messages,
+    const anthropic = getAnthropicClient()
+
+    // Збираємо повну відповідь з retry для 529 overloaded.
+    // Використовуємо create() замість stream() — так помилка 529 кидається одразу,
+    // а не під час читання стріму, що дозволяє retry відпрацювати до початку стріму клієнту.
+    let responseText: string
+    try {
+      const response = await withRetry(() =>
+        anthropic.messages.create({
+          model: aiModel,
+          max_tokens: tokenLimit,
+          system: systemPrompt,
+          messages,
+        })
+      )
+      responseText = response.content
+        .filter((b) => b.type === 'text')
+        .map((b) => (b as { type: 'text'; text: string }).text)
+        .join('')
+    } catch (apiErr) {
+      const isOverloaded = apiErr instanceof Anthropic.APIError && (apiErr.status === 529 || apiErr.status === 503)
+      console.error('[chat/route] API помилка після всіх спроб:', apiErr)
+      return NextResponse.json(
+        {
+          error: isOverloaded ? 'OVERLOADED' : 'API_ERROR',
+          message: isOverloaded
+            ? 'Сервіс тимчасово перевантажений. Спробуйте через хвилину.'
+            : 'Помилка підключення до AI. Спробуйте ще раз.',
+        },
+        { status: isOverloaded ? 503 : 500 }
+      )
+    }
+
+    // Зберігаємо відповідь агента в БД
+    await db.message.create({
+      data: {
+        conversationId: conversation!.id,
+        role: 'ASSISTANT',
+        content: responseText,
+      },
     })
 
-    // Зберігаємо відповідь після завершення стріму
+    // Симулюємо SSE-стрім для сумісності з клієнтом
     const encoder = new TextEncoder()
-    let fullResponse = ''
-
     const readable = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of stream) {
-            if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-              const text = chunk.delta.text
-              fullResponse += text
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`))
-            }
-          }
-
-          // Зберігаємо відповідь агента в БД
-          await db.message.create({
-            data: {
-              conversationId: conversation!.id,
-              role: 'ASSISTANT',
-              content: fullResponse,
-            },
-          })
-
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ conversationId: conversation!.id, done: true })}\n\n`))
-          controller.close()
-        } catch (streamError) {
-          console.error('[chat/stream] помилка:', streamError)
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: String(streamError) })}\n\n`))
-          controller.close()
-        }
+      start(controller) {
+        // Надсилаємо текст одним чанком (без streaming затримок)
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: responseText })}\n\n`))
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ conversationId: conversation!.id, done: true })}\n\n`))
+        controller.close()
       },
     })
 

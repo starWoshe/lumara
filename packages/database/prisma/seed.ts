@@ -1,8 +1,27 @@
+/// <reference types="node" />
 import { PrismaClient } from '@prisma/client'
 
 const db = new PrismaClient()
 
 async function main() {
+  // ---- Адмін-користувач ----
+  const adminEmail = process.env.ADMIN_EMAIL
+  if (adminEmail) {
+    await db.user.upsert({
+      where: { email: adminEmail },
+      update: { role: 'ADMIN' },
+      create: {
+        email: adminEmail,
+        name: 'Admin',
+        role: 'ADMIN',
+      },
+    })
+    console.log(`✓ Адмін: ${adminEmail}`)
+  } else {
+    console.log('⚠️  ADMIN_EMAIL не встановлено — адмін-запис пропущено')
+  }
+
+  // ---- Агенти ----
   console.log('Заповнення таблиці агентів...')
 
   const agents = [

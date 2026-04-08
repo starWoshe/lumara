@@ -93,7 +93,10 @@ export default function ChatPage() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || `HTTP ${res.status}`)
+        if (errData.error === 'OVERLOADED' || res.status === 503) {
+          throw new Error('Сервіс тимчасово перевантажений. Зачекайте хвилину і спробуйте ще раз.')
+        }
+        throw new Error(errData.message || errData.error || `HTTP ${res.status}`)
       }
 
       const reader = res.body!.getReader()

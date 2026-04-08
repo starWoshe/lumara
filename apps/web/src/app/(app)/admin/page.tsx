@@ -15,7 +15,7 @@ type User = {
   role: string
   createdAt: string
   subscriptions: { plan: string; status: string }[]
-  _count: { conversations: number; messages: number }
+  _count: { conversations: number }
 }
 
 type ActivityLog = {
@@ -106,9 +106,9 @@ export default function AdminPage() {
           icon="💬"
         />
         <StatCard
-          label="Всього повідомлень"
-          value={users.reduce((s, u) => s + u._count.messages, 0)}
-          icon="✉️"
+          label="Нові сьогодні"
+          value={users.filter(u => new Date(u.createdAt).toDateString() === new Date().toDateString()).length}
+          icon="🌱"
         />
       </div>
 
@@ -234,7 +234,7 @@ function UsersTable({ users, onSelectUser }: {
           <tr className="border-b border-white/10 text-white/40 text-xs uppercase tracking-wide">
             <th className="text-left p-4">Користувач</th>
             <th className="text-left p-4 hidden md:table-cell">Роль / План</th>
-            <th className="text-left p-4 hidden lg:table-cell">Розмов / Повідомлень</th>
+            <th className="text-left p-4 hidden lg:table-cell">Розмов</th>
             <th className="text-right p-4 hidden md:table-cell">Зареєстрований</th>
             <th className="p-4" />
           </tr>
@@ -282,7 +282,7 @@ function UsersTable({ users, onSelectUser }: {
                   </div>
                 </td>
                 <td className="p-4 hidden lg:table-cell text-white/40 text-xs">
-                  {user._count.conversations} / {user._count.messages}
+                  {user._count.conversations} розмов
                 </td>
                 <td className="p-4 text-right text-white/30 text-xs hidden md:table-cell whitespace-nowrap">
                   {formatDate(user.createdAt)}
