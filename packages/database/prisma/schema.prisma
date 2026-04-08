@@ -16,12 +16,18 @@ datasource db {
 // КОРИСТУВАЧІ ТА ПРОФІЛІ
 // =========================================
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
   emailVerified DateTime? @map("email_verified")
   name          String?
   image         String?
+  role          UserRole  @default(USER)
   tenantId      String?   @map("tenant_id")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -34,8 +40,38 @@ model User {
   conversations Conversation[]
   subscriptions Subscription[]
   enrollments   Enrollment[]
+  activityLogs  ActivityLog[]
 
   @@map("users")
+}
+
+// =========================================
+// ЛОГ АКТИВНОСТІ КОРИСТУВАЧІВ
+// =========================================
+
+enum ActivityAction {
+  SIGN_IN              // Вхід в систему
+  SIGN_OUT             // Вихід
+  CHAT_STARTED         // Почав чат з агентом
+  MESSAGE_SENT         // Надіслав повідомлення
+  PROFILE_UPDATED      // Оновив профіль
+  SUBSCRIPTION_CHANGED // Змінив підписку
+}
+
+model ActivityLog {
+  id        String         @id @default(uuid())
+  userId    String         @map("user_id")
+  action    ActivityAction
+  metadata  Json?          // Додаткові дані (агент, план тощо)
+  ipAddress String?        @map("ip_address")
+  userAgent String?        @map("user_agent")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("activity_logs")
 }
 
 // =========================================

@@ -72,6 +72,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <Link href="/pricing" className="mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-lumara-400/60 hover:text-lumara-300 hover:bg-lumara-900/20 transition-all text-xs">
             <span>⭐</span> Тарифи
           </Link>
+          {(session.user as { role?: string }).role === 'ADMIN' && (
+            <Link href="/admin" className="mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-yellow-400/70 hover:text-yellow-300 hover:bg-yellow-900/20 transition-all text-xs">
+              <span>🛡️</span> Адмін панель
+            </Link>
+          )}
           <Link href="/api/auth/signout" className="mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/5 transition-all text-xs">
             <span>↩</span> Вийти
           </Link>
