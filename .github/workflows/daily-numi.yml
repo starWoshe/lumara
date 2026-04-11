@@ -1,18 +1,16 @@
-name: LUNA — Щоденний астрологічний пост
+name: NUMI — Нумерологія дня
 
 on:
-  # Запуск щодня о 09:00 Київ (UTC+3 літо / UTC+2 зима)
-  # 06:00 UTC = 09:00 Київ влітку (EEST, UTC+3, квітень–жовтень)
-  # Взимку (листопад–березень, UTC+2) пост виходитиме о 08:00 Київ
+  # 05:00 UTC = 08:00 Київ влітку (EEST, UTC+3) — ранковий пост
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 5 * * *'
 
   # Ручний запуск для тестування
   workflow_dispatch:
 
 jobs:
   publish-daily-post:
-    name: Публікація щоденного прогнозу LUNA
+    name: Публікація нумерологічного прогнозу
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -31,29 +29,25 @@ jobs:
         run: |
           pip install -r packages/agents/luna/scripts/requirements.txt
 
-      - name: Запустити Telegram бота LUNA
+      - name: Запустити щоденний бот NUMI
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
-          # Другий Telegram канал (опційно)
-          TELEGRAM_CHANNEL_ID_2: ${{ secrets.TELEGRAM_CHANNEL_ID_2 }}
           # Meta API — один токен для всіх акаунтів
           META_USER_TOKEN: ${{ secrets.META_USER_TOKEN }}
-          LUNA_PAGE_ID: ${{ secrets.LUNA_PAGE_ID }}
-          LUNA_IG_USER_ID: ${{ secrets.LUNA_IG_USER_ID }}
-          LUNA_THREADS_USER_ID: ${{ secrets.LUNA_THREADS_USER_ID }}
+          NUMI_PAGE_ID: ${{ secrets.NUMI_PAGE_ID }}
+          NUMI_IG_USER_ID: ${{ secrets.NUMI_IG_USER_ID }}
+          NUMI_THREADS_USER_ID: ${{ secrets.NUMI_THREADS_USER_ID }}
           LUMARA_PAGE_ID: ${{ secrets.LUMARA_PAGE_ID }}
           LUMARA_IG_USER_ID: ${{ secrets.LUMARA_IG_USER_ID }}
           LUMARA_THREADS_USER_ID: ${{ secrets.LUMARA_THREADS_USER_ID }}
         run: |
-          python packages/agents/luna/scripts/telegram_bot.py
+          python packages/agents/numi/scripts/daily_bot.py
 
-      - name: Завантажити Instagram контент як артефакт
+      - name: Завантажити контент як артефакт
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: instagram-content-${{ github.run_id }}
+          name: numi-content-${{ github.run_id }}
           path: instagram-content/
           retention-days: 30
