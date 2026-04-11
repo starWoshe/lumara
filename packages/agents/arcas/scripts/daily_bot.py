@@ -6,14 +6,11 @@ LUMARA Academy · Запускається о 09:00 UTC (12:00 Київ вліт
 Обов'язкові змінні середовища:
   ANTHROPIC_API_KEY          — ключ Anthropic API
   OPENAI_API_KEY             — ключ OpenAI API (для DALL-E 3)
-  META_USER_TOKEN            — 60-денний токен Meta
+  META_USER_TOKEN            — 60-денний User Access Token Meta
   ARCAS_PAGE_ID              — Facebook Page ID ARCAS
-
-Опційні:
-  ARCAS_IG_USER_ID           — Instagram Business Account ID ARCAS
-  # Threads використовує той самий ARCAS_IG_USER_ID
+  ARCAS_IG_USER_ID           — Instagram Business / Threads Account ID ARCAS
   LUMARA_PAGE_ID             — Facebook Page ID LUMARA Academy
-  LUMARA_IG_USER_ID          — Instagram Business Account ID LUMARA Academy
+  LUMARA_IG_USER_ID          — Instagram Business / Threads Account ID LUMARA Academy
 """
 
 import os
