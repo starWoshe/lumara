@@ -43,10 +43,8 @@ jobs:
           META_USER_TOKEN: ${{ secrets.META_USER_TOKEN }}
           LUNA_PAGE_ID: ${{ secrets.LUNA_PAGE_ID }}
           LUNA_IG_USER_ID: ${{ secrets.LUNA_IG_USER_ID }}
-          LUNA_THREADS_USER_ID: ${{ secrets.LUNA_THREADS_USER_ID }}
           LUMARA_PAGE_ID: ${{ secrets.LUMARA_PAGE_ID }}
           LUMARA_IG_USER_ID: ${{ secrets.LUMARA_IG_USER_ID }}
-          LUMARA_THREADS_USER_ID: ${{ secrets.LUMARA_THREADS_USER_ID }}
         run: |
           python packages/agents/luna/scripts/telegram_bot.py
 

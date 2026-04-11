@@ -11,7 +11,7 @@ LUMARA Academy · Запускається о 05:00 UTC (08:00 Київ вліт
 
 Опційні:
   NUMI_IG_USER_ID            — Instagram Business Account ID NUMI
-  NUMI_THREADS_USER_ID       — Threads User ID NUMI
+  # Threads використовує той самий NUMI_IG_USER_ID
   LUMARA_PAGE_ID             — Facebook Page ID LUMARA Academy
   LUMARA_IG_USER_ID          — Instagram Business Account ID LUMARA Academy
 """
@@ -277,7 +277,6 @@ def main():
         facebook_text=post_text,
         instagram_caption=instagram_caption,
         image_url=image_url,
-        threads_text=post_text[:500],
         also_post_to_lumara=True,
     )
     print()

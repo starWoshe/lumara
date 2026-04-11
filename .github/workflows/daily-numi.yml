@@ -37,10 +37,8 @@ jobs:
           META_USER_TOKEN: ${{ secrets.META_USER_TOKEN }}
           NUMI_PAGE_ID: ${{ secrets.NUMI_PAGE_ID }}
           NUMI_IG_USER_ID: ${{ secrets.NUMI_IG_USER_ID }}
-          NUMI_THREADS_USER_ID: ${{ secrets.NUMI_THREADS_USER_ID }}
           LUMARA_PAGE_ID: ${{ secrets.LUMARA_PAGE_ID }}
           LUMARA_IG_USER_ID: ${{ secrets.LUMARA_IG_USER_ID }}
-          LUMARA_THREADS_USER_ID: ${{ secrets.LUMARA_THREADS_USER_ID }}
         run: |
           python packages/agents/numi/scripts/daily_bot.py
 

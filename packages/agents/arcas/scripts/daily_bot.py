@@ -11,7 +11,7 @@ LUMARA Academy · Запускається о 09:00 UTC (12:00 Київ вліт
 
 Опційні:
   ARCAS_IG_USER_ID           — Instagram Business Account ID ARCAS
-  ARCAS_THREADS_USER_ID      — Threads User ID ARCAS
+  # Threads використовує той самий ARCAS_IG_USER_ID
   LUMARA_PAGE_ID             — Facebook Page ID LUMARA Academy
   LUMARA_IG_USER_ID          — Instagram Business Account ID LUMARA Academy
 """
@@ -274,7 +274,6 @@ def main():
         facebook_text=post_text,
         instagram_caption=instagram_caption,
         image_url=image_url,
-        threads_text=post_text[:500],
         also_post_to_lumara=True,
     )
     print()

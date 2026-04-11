@@ -37,10 +37,8 @@ jobs:
           META_USER_TOKEN: ${{ secrets.META_USER_TOKEN }}
           UMBRA_PAGE_ID: ${{ secrets.UMBRA_PAGE_ID }}
           UMBRA_IG_USER_ID: ${{ secrets.UMBRA_IG_USER_ID }}
-          UMBRA_THREADS_USER_ID: ${{ secrets.UMBRA_THREADS_USER_ID }}
           LUMARA_PAGE_ID: ${{ secrets.LUMARA_PAGE_ID }}
           LUMARA_IG_USER_ID: ${{ secrets.LUMARA_IG_USER_ID }}
-          LUMARA_THREADS_USER_ID: ${{ secrets.LUMARA_THREADS_USER_ID }}
         run: |
           python packages/agents/umbra/scripts/daily_bot.py
 

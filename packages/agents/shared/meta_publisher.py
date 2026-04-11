@@ -8,15 +8,15 @@ LUMARA Academy · Використовується всіма агентами (
   - Instagram Business (фото + підпис)
   - Threads (текст, опційно фото)
 
+Важливо: Threads User ID = Instagram User ID (той самий Meta Graph API).
+Тому для Threads окремий env не потрібен — використовується {NAME}_IG_USER_ID.
+
 Вхід: один 60-денний User Access Token → отримуємо Page Token для кожної сторінки.
 
-Змінні середовища (обов'язково для кожного агента, що використовує Meta):
+Змінні середовища для кожного акаунту:
   META_USER_TOKEN          — 60-денний токен користувача Meta
-
-Для кожного акаунту:
   {NAME}_PAGE_ID           — ID Facebook Page (LUMARA, LUNA, ARCAS, NUMI, UMBRA)
-  {NAME}_IG_USER_ID        — ID Instagram Business Account
-  {NAME}_THREADS_USER_ID   — ID Threads User (опційно)
+  {NAME}_IG_USER_ID        — ID Instagram Business / Threads Account (один ID для обох)
 """
 
 import os
@@ -31,16 +31,15 @@ GRAPH_API = 'https://graph.facebook.com/v19.0'
 @dataclass
 class MetaAccount:
     """Описує один акаунт Meta для публікації."""
-    name: str                              # 'luna', 'arcas', 'lumara' тощо
-    page_id: str                           # Facebook Page ID
-    ig_user_id: Optional[str] = None      # Instagram Business Account ID
-    threads_user_id: Optional[str] = None  # Threads User ID (опційно)
+    name: str                         # 'luna', 'arcas', 'lumara' тощо
+    page_id: str                      # Facebook Page ID
+    ig_user_id: Optional[str] = None  # Instagram Business / Threads Account ID (однаковий)
 
 
 def load_account(name: str) -> Optional['MetaAccount']:
     """
     Завантажує MetaAccount з env змінних за іменем агента.
-    Наприклад, load_account('luna') читає LUNA_PAGE_ID, LUNA_IG_USER_ID тощо.
+    Наприклад, load_account('luna') читає LUNA_PAGE_ID, LUNA_IG_USER_ID.
     Повертає None якщо PAGE_ID не вказано.
     """
     prefix = name.upper()
@@ -51,7 +50,6 @@ def load_account(name: str) -> Optional['MetaAccount']:
         name=name,
         page_id=page_id,
         ig_user_id=os.environ.get(f'{prefix}_IG_USER_ID', '').strip() or None,
-        threads_user_id=os.environ.get(f'{prefix}_THREADS_USER_ID', '').strip() or None,
     )
 
 
@@ -148,13 +146,14 @@ def post_to_instagram(ig_user_id: str, page_token: str, image_url: str, caption:
 # ── Threads ────────────────────────────────────────────────────────────────────
 
 def post_to_threads(
-    threads_user_id: str,
+    ig_user_id: str,  # Threads User ID = Instagram User ID (той самий Meta Graph API)
     page_token: str,
     text: str,
     image_url: Optional[str] = None,
 ) -> str:
     """
     Публікує в Threads. Повертає ID поста.
+    ig_user_id = Threads User ID — вони однакові в Meta Graph API.
     Threads потребує окремого схвалення Meta App — перевір налаштування додатку.
     """
     params: dict = {'access_token': page_token}
@@ -164,9 +163,9 @@ def post_to_threads(
         params.update({'media_type': 'TEXT', 'text': text[:500]})
 
     # Крок 1: створити контейнер
-    r = httpx.post(f'{GRAPH_API}/{threads_user_id}/threads', params=params, timeout=60)
+    r = httpx.post(f'{GRAPH_API}/{ig_user_id}/threads', params=params, timeout=60)
     if not r.is_success:
-        print(f'    Threads create [{threads_user_id}] помилка: {r.status_code} {r.text[:200]}')
+        print(f'    Threads create [{ig_user_id}] помилка: {r.status_code} {r.text[:200]}')
     r.raise_for_status()
     container_id = r.json()['id']
 
@@ -174,12 +173,12 @@ def post_to_threads(
 
     # Крок 2: опублікувати
     r2 = httpx.post(
-        f'{GRAPH_API}/{threads_user_id}/threads_publish',
+        f'{GRAPH_API}/{ig_user_id}/threads_publish',
         params={'creation_id': container_id, 'access_token': page_token},
         timeout=60,
     )
     if not r2.is_success:
-        print(f'    Threads publish [{threads_user_id}] помилка: {r2.status_code} {r2.text[:200]}')
+        print(f'    Threads publish [{ig_user_id}] помилка: {r2.status_code} {r2.text[:200]}')
     r2.raise_for_status()
     return r2.json()['id']
 
@@ -246,11 +245,11 @@ def publish_to_meta(
                 results['instagram'] = f'ERROR: {e}'
                 print(f'  ❌ Instagram: {e}')
 
-    # Threads
-    if not skip_threads and account.threads_user_id:
+    # Threads (використовує той самий ig_user_id)
+    if not skip_threads and account.ig_user_id:
         text_for_threads = threads_text or facebook_text[:500]
         try:
-            post_id = post_to_threads(account.threads_user_id, page_token, text_for_threads, image_url)
+            post_id = post_to_threads(account.ig_user_id, page_token, text_for_threads, image_url)
             results['threads'] = post_id
             print(f'  ✅ Threads: {post_id}')
         except Exception as e:
