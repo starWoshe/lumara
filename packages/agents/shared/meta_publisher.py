@@ -64,11 +64,18 @@ def post_to_facebook_page(
     if image_url:
         url = f'{GRAPH_API}/{page_id}/photos'
         params = {'url': image_url, 'caption': message[:63206], 'access_token': page_token}
+        r = httpx.post(url, params=params, timeout=60)
+        # Якщо /photos потребує pages_read_engagement (deprecated) — падаємо на текстовий пост
+        if r.status_code == 403 and 'pages_read_engagement' in r.text:
+            print(f'    Facebook [{page_id}]: /photos потребує pages_read_engagement, використовуємо /feed')
+            url = f'{GRAPH_API}/{page_id}/feed'
+            params = {'message': message[:63206], 'access_token': page_token}
+            r = httpx.post(url, params=params, timeout=60)
     else:
         url = f'{GRAPH_API}/{page_id}/feed'
         params = {'message': message[:63206], 'access_token': page_token}
+        r = httpx.post(url, params=params, timeout=60)
 
-    r = httpx.post(url, params=params, timeout=60)
     if not r.is_success:
         print(f'    Facebook API [{page_id}] помилка: {r.status_code} {r.text[:200]}')
     r.raise_for_status()
