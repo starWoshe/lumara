@@ -6,23 +6,27 @@ LUMARA Academy · Використовується всіма агентами (
 Підтримує:
   - Facebook Pages (текст + фото через /feed з link)
   - Instagram Business (фото + підпис, потребує instagram_content_publish)
-  - Threads (текст, опційно фото через graph.threads.net)
+  - Threads (текст, опційно фото через graph.threads.net, окремий OAuth токен)
 
 Важливо:
-  - Threads User ID = Instagram User ID (той самий Meta Graph API).
   - Для Facebook НЕ використовуємо /photos (потребує pages_read_engagement).
     Замість цього — /feed з параметром link (image_url), що не потребує зайвих permissions.
   - Threads API використовує окремий хост: graph.threads.net/v1.0
+  - Threads потребує ОКРЕМИЙ User Token (не Page Access Token).
+    OAuth URL: https://threads.net/oauth/authorize?scope=threads_basic,threads_content_publish
+    Threads User ID відрізняється від Instagram User ID.
 
 Необхідні permissions в токені:
   - Facebook: pages_manage_posts, pages_show_list
   - Instagram: instagram_content_publish, instagram_basic
-  - Threads: threads_content_publish, threads_basic
+  - Threads: threads_content_publish, threads_basic (окремий токен)
 
 Змінні середовища для кожного акаунту:
-  {NAME}_PAGE_ACCESS_TOKEN   — постійний Page Access Token (не закінчується)
+  {NAME}_PAGE_ACCESS_TOKEN   — постійний Page Access Token для Facebook/Instagram
   {NAME}_PAGE_ID             — ID Facebook Page (LUMARA, LUNA, ARCAS, NUMI, UMBRA)
-  {NAME}_IG_USER_ID          — ID Instagram Business / Threads Account (один ID для обох)
+  {NAME}_IG_USER_ID          — ID Instagram Business Account
+  {NAME}_THREADS_TOKEN       — окремий Threads User Token (отримується через Threads OAuth)
+  {NAME}_THREADS_USER_ID     — Threads User ID (з Threads OAuth response)
 """
 
 import os
@@ -40,8 +44,10 @@ class MetaAccount:
     """Описує один акаунт Meta для публікації."""
     name: str                              # 'luna', 'arcas', 'lumara' тощо
     page_id: str                           # Facebook Page ID
-    page_access_token: str                 # Постійний Page Access Token
-    ig_user_id: Optional[str] = None      # Instagram Business / Threads Account ID
+    page_access_token: str                 # Постійний Page Access Token (Facebook/Instagram)
+    ig_user_id: Optional[str] = None      # Instagram Business Account ID
+    threads_token: Optional[str] = None   # Окремий Threads User Token (Threads OAuth)
+    threads_user_id: Optional[str] = None # Threads User ID (з Threads OAuth)
 
 
 def load_account(name: str) -> Optional[MetaAccount]:
@@ -59,6 +65,8 @@ def load_account(name: str) -> Optional[MetaAccount]:
         page_id=page_id,
         page_access_token=page_token,
         ig_user_id=os.environ.get(f'{prefix}_IG_USER_ID', '').strip() or None,
+        threads_token=os.environ.get(f'{prefix}_THREADS_TOKEN', '').strip() or None,
+        threads_user_id=os.environ.get(f'{prefix}_THREADS_USER_ID', '').strip() or None,
     )
 
 
@@ -219,14 +227,17 @@ def publish_to_meta(
                 results['instagram'] = f'ERROR: {e}'
                 print(f'  ❌ Instagram: {e}')
 
-    if not skip_threads and account.ig_user_id:
-        try:
-            post_id = post_to_threads(account.ig_user_id, page_token, facebook_text[:500], image_url)
-            results['threads'] = post_id
-            print(f'  ✅ Threads: {post_id}')
-        except Exception as e:
-            results['threads'] = f'ERROR: {e}'
-            print(f'  ❌ Threads: {e}')
+    if not skip_threads:
+        if not account.threads_token or not account.threads_user_id:
+            print(f'  ⏭️  Threads: пропущено (немає {account.name.upper()}_THREADS_TOKEN або _THREADS_USER_ID)')
+        else:
+            try:
+                post_id = post_to_threads(account.threads_user_id, account.threads_token, facebook_text[:500], image_url)
+                results['threads'] = post_id
+                print(f'  ✅ Threads: {post_id}')
+            except Exception as e:
+                results['threads'] = f'ERROR: {e}'
+                print(f'  ❌ Threads: {e}')
 
     return results
 
