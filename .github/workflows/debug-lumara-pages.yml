@@ -9,8 +9,14 @@ jobs:
     steps:
       - name: Отримати список сторінок lumara-bot
         run: |
-          echo "=== Сторінки доступні lumara-bot ==="
+          echo "=== Сторінки доступні lumara-bot (me/accounts) ==="
           curl -s "https://graph.facebook.com/v19.0/me/accounts?access_token=${{ secrets.LUMARA_PAGE_ACCESS_TOKEN }}" | python3 -m json.tool
           echo ""
           echo "=== System User info ==="
           curl -s "https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${{ secrets.LUMARA_PAGE_ACCESS_TOKEN }}" | python3 -m json.tool
+          echo ""
+          echo "=== Партнерські сторінки портфоліо ЛУМАРА ==="
+          curl -s "https://graph.facebook.com/v19.0/991789959940552/client_pages?access_token=${{ secrets.LUMARA_PAGE_ACCESS_TOKEN }}" | python3 -m json.tool
+          echo ""
+          echo "=== Власні сторінки портфоліо ЛУМАРА ==="
+          curl -s "https://graph.facebook.com/v19.0/991789959940552/owned_pages?access_token=${{ secrets.LUMARA_PAGE_ACCESS_TOKEN }}" | python3 -m json.tool
