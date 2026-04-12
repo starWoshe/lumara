@@ -1,0 +1,41 @@
+name: Тест — LUMARA Facebook пост
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Встановити httpx
+        run: pip install httpx
+
+      - name: Тест публікації на LUMARA Facebook
+        env:
+          LUMARA_PAGE_ACCESS_TOKEN: ${{ secrets.LUMARA_PAGE_ACCESS_TOKEN }}
+          LUMARA_PAGE_ID: ${{ secrets.LUMARA_PAGE_ID }}
+        run: |
+          python - <<'EOF'
+          import sys
+          sys.path.insert(0, 'packages/agents/shared')
+          from meta_publisher import load_account, post_to_facebook_page
+
+          account = load_account('lumara')
+          if not account:
+              print('❌ LUMARA_PAGE_ID або LUMARA_PAGE_ACCESS_TOKEN не задані')
+              sys.exit(1)
+
+          print(f'Акаунт: {account.name}, Page ID: {account.page_id}')
+          post_id = post_to_facebook_page(
+              account.page_id,
+              account.page_access_token,
+              '🌙 Тестовий пост LUMARA Academy — перевірка автоматизації публікацій. #test'
+          )
+          print(f'✅ Facebook пост опубліковано: {post_id}')
+          EOF
