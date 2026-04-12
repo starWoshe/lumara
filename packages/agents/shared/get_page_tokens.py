@@ -11,7 +11,14 @@ Page Access Token, отриманий з довгострокового User Tok
 
 Використання:
   pip install httpx
-  python get_page_tokens.py YOUR_60_DAY_USER_TOKEN
+  python get_page_tokens.py YOUR_USER_TOKEN
+
+Відомі Page IDs:
+  LUMARA : 1109487505571319
+  LUNA   : 1095963640263286
+  ARCAS  : 1059568480573429
+  UMBRA  : 1115612691630367
+  NUMI   : (знайди в Business Manager URL)
 """
 
 import sys
@@ -19,16 +26,26 @@ import httpx
 
 GRAPH_API = 'https://graph.facebook.com/v19.0'
 
+# Відомі Page IDs для кожного агента
+PAGE_IDS = {
+    'LUMARA': '1109487505571319',
+    'LUNA':   '1095963640263286',
+    'ARCAS':  '1059568480573429',
+    'UMBRA':  '1115612691630367',
+    # 'NUMI': 'ЗНАЙДИ_ID',  # розкоментуй після того як знайдеш ID
+}
 
-def get_all_page_tokens(user_token: str) -> list[dict]:
-    """Повертає всі Page Access Tokens до яких є доступ у цього User Token."""
+
+def get_page_token(page_id: str, user_token: str) -> dict:
+    """Отримує Page Access Token для конкретної сторінки по її ID."""
     r = httpx.get(
-        f'{GRAPH_API}/me/accounts',
-        params={'access_token': user_token, 'fields': 'id,name,access_token,category'},
+        f'{GRAPH_API}/{page_id}',
+        params={'fields': 'id,name,access_token', 'access_token': user_token},
         timeout=30,
     )
-    r.raise_for_status()
-    return r.json().get('data', [])
+    if not r.is_success:
+        return {'error': r.text[:200], 'id': page_id}
+    return r.json()
 
 
 def main():
@@ -38,71 +55,40 @@ def main():
 
     user_token = sys.argv[1].strip()
 
-    print('🔑 Отримую Page Access Tokens...\n')
-    try:
-        pages = get_all_page_tokens(user_token)
-    except httpx.HTTPStatusError as e:
-        print(f'❌ Помилка API: {e.response.status_code} {e.response.text}')
-        sys.exit(1)
-
-    if not pages:
-        print('❌ Не знайдено жодної сторінки. Перевір права токену: pages_show_list, pages_manage_posts')
-        sys.exit(1)
-
-    print(f'Знайдено {len(pages)} сторінок:\n')
+    print('🔑 Отримую Page Access Tokens по ID сторінок...\n')
     print('─' * 70)
 
-    for page in pages:
-        name = page.get('name', 'Без назви')
-        page_id = page.get('id', '')
-        page_token = page.get('access_token', '')
-        category = page.get('category', '')
+    results = []
+    for agent_name, page_id in PAGE_IDS.items():
+        data = get_page_token(page_id, user_token)
 
-        print(f'📄 {name} ({category})')
+        if 'error' in data:
+            print(f'❌ {agent_name} ({page_id}): {data["error"]}')
+            print()
+            continue
+
+        name = data.get('name', 'Без назви')
+        token = data.get('access_token', '')
+
+        print(f'✅ {agent_name} — {name}')
         print(f'   PAGE_ID    : {page_id}')
-        print(f'   PAGE_TOKEN : {page_token}')
+        print(f'   PAGE_TOKEN : {token[:40]}...')
         print()
+        results.append((agent_name, page_id, token))
 
     print('─' * 70)
     print()
     print('📋 Команди для GitHub Secrets (встав у термінал):')
     print()
 
-    # Маппінг назв сторінок на імена агентів (за ключовими словами)
-    agent_map = {
-        'luna': 'LUNA',
-        'arcas': 'ARCAS',
-        'numi': 'NUMI',
-        'umbra': 'UMBRA',
-        'lumara': 'LUMARA',
-    }
-
-    for page in pages:
-        name = page.get('name', '').lower()
-        page_id = page.get('id', '')
-        page_token = page.get('access_token', '')
-
-        # Визначаємо ім'я агента за назвою сторінки
-        agent_prefix = None
-        for key, prefix in agent_map.items():
-            if key in name:
-                agent_prefix = prefix
-                break
-
-        if agent_prefix:
-            print(f'# {page.get("name")}')
-            print(f'gh secret set {agent_prefix}_PAGE_ID --body "{page_id}"')
-            print(f'gh secret set {agent_prefix}_PAGE_ACCESS_TOKEN --body "{page_token}"')
-            print()
-        else:
-            print(f'# {page.get("name")} — не розпізнано, вкажи вручну:')
-            print(f'# gh secret set ???_PAGE_ID --body "{page_id}"')
-            print(f'# gh secret set ???_PAGE_ACCESS_TOKEN --body "{page_token}"')
-            print()
+    for agent_name, page_id, token in results:
+        print(f'# {agent_name}')
+        print(f'gh secret set {agent_name}_PAGE_ID --body "{page_id}"')
+        print(f'gh secret set {agent_name}_PAGE_ACCESS_TOKEN --body "{token}"')
+        print()
 
     print('─' * 70)
     print('⚠️  УВАГА: Не зберігай цей вивід у файл — токени конфіденційні!')
-    print('✅ Після збереження в GitHub Secrets можна оновити код на Page Access Tokens.')
 
 
 if __name__ == '__main__':
