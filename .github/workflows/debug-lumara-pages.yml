@@ -1,0 +1,16 @@
+name: Debug — LUMARA Page ID
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Отримати список сторінок lumara-bot
+        run: |
+          echo "=== Сторінки доступні lumara-bot ==="
+          curl -s "https://graph.facebook.com/v19.0/me/accounts?access_token=${{ secrets.LUMARA_PAGE_ACCESS_TOKEN }}" | python3 -m json.tool
+          echo ""
+          echo "=== System User info ==="
+          curl -s "https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${{ secrets.LUMARA_PAGE_ACCESS_TOKEN }}" | python3 -m json.tool
