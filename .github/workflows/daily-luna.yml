@@ -40,8 +40,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
-          # Другий Telegram канал (опційно)
-          TELEGRAM_CHANNEL_ID_2: ${{ secrets.TELEGRAM_CHANNEL_ID_2 }}
+          # Другий Telegram канал — відключено (LUMARA Academy Telegram не використовується)
           # Meta — постійні Page Access Tokens
           LUNA_PAGE_ACCESS_TOKEN: ${{ secrets.LUNA_PAGE_ACCESS_TOKEN }}
           LUNA_PAGE_ID: ${{ secrets.LUNA_PAGE_ID }}
