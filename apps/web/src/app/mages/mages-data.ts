@@ -86,7 +86,7 @@ export const mages: Mage[] = [
     abilities: ['Число долі', 'Особистий рік', 'Матриця народження', 'Числа імені'],
     stats: { sessions: '1 987', rating: '4.96', label: 'сесій проведено' },
     portrait: '/numi-portrait-1.png',
-    portraitPosition: 'object-[50%_8%]',
+    portraitPosition: 'object-[50%_50%]',
     room: '/numi-room.png',
     accentColor: 'from-amber-500 to-yellow-500',
     glowColor: 'rgba(245,158,11,0.5)',
