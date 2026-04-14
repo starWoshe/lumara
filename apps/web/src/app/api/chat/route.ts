@@ -147,18 +147,19 @@ export async function POST(req: NextRequest) {
     const basePrompt = AGENT_PROMPTS[agentType]
     const tokenLimit = AGENT_TOKEN_LIMITS[agentType]
 
-    // Додаємо дані профілю до системного промпту (якщо заповнені)
-    let profileContext = ''
-    if (profile?.birthDate || profile?.birthTime || profile?.birthPlace) {
-      const parts: string[] = []
-      if (profile.birthDate) {
-        const d = new Date(profile.birthDate)
-        parts.push(`Дата народження: ${d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })}`)
-      }
-      if (profile.birthTime) parts.push(`Час народження: ${profile.birthTime}`)
-      if (profile.birthPlace) parts.push(`Місце народження: ${profile.birthPlace}`)
-      profileContext = `\n\n---\nПЕРСОНАЛЬНІ ДАНІ КОРИСТУВАЧА (використовуй їх в аналізі):\n${parts.join('\n')}\n---`
+    // Додаємо дані профілю до системного промпту
+    const parts: string[] = []
+    if (session.user.name) parts.push(`Ім'я: ${session.user.name}`)
+    if (profile?.birthDate) {
+      const d = new Date(profile.birthDate)
+      parts.push(`Дата народження: ${d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })}`)
     }
+    if (profile?.birthTime) parts.push(`Час народження: ${profile.birthTime}`)
+    if (profile?.birthPlace) parts.push(`Місце народження: ${profile.birthPlace}`)
+
+    const profileContext = parts.length > 0
+      ? `\n\n---\nПЕРСОНАЛЬНІ ДАНІ КОРИСТУВАЧА (використовуй їх в аналізі без зайвих запитів — ці дані вже відомі):\n${parts.join('\n')}\n---`
+      : ''
 
     const systemPrompt = basePrompt + profileContext
 
