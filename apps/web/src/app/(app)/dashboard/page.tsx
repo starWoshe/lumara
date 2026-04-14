@@ -20,7 +20,42 @@ export default async function DashboardPage() {
   const firstName = session?.user.name?.split(' ')[0] ?? 'Мандрівнику'
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-2xl xl:max-w-3xl">
+    <div className="relative min-h-screen">
+
+      {/* ── Анімований замок справа ── */}
+      <div
+        className="fixed right-0 top-0 bottom-0 z-0 pointer-events-none hidden lg:block"
+        style={{ width: '45%', left: 'auto' }}
+        aria-hidden="true"
+      >
+        {/* Маска — плавне зникнення зліва */}
+        <div
+          className="absolute inset-0 z-10"
+          style={{ background: 'linear-gradient(to right, rgba(6,6,16,1) 0%, rgba(6,6,16,0.5) 25%, rgba(6,6,16,0.1) 50%, transparent 75%)' }}
+        />
+        {/* Маска знизу */}
+        <div
+          className="absolute inset-x-0 bottom-0 z-10 h-48"
+          style={{ background: 'linear-gradient(to top, rgba(6,6,16,1) 0%, transparent 100%)' }}
+        />
+        {/* Маска зверху */}
+        <div
+          className="absolute inset-x-0 top-0 z-10 h-32"
+          style={{ background: 'linear-gradient(to bottom, rgba(6,6,16,0.8) 0%, transparent 100%)' }}
+        />
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover object-center"
+          style={{ mixBlendMode: 'screen', opacity: 0.9 }}
+        >
+          <source src="/castle-animated.mp4" type="video/mp4" />
+        </video>
+      </div>
+
+    <div className="relative z-10 p-4 sm:p-6 md:p-8 lg:p-10 max-w-2xl xl:max-w-3xl">
 
       {/* ── Привітання ── */}
       <div className="mb-6 sm:mb-8">
@@ -115,6 +150,7 @@ export default async function DashboardPage() {
           Для точнішого астрологічного аналізу заповни дату, час та місце народження у профілі →
         </p>
       </Link>
+    </div>
     </div>
   )
 }

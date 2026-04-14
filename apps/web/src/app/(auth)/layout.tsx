@@ -116,36 +116,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         aria-hidden="true"
       />
 
-      {/* ── Анімований замок справа ── */}
-      <div
-        className="absolute right-0 top-0 bottom-0 z-0 pointer-events-none hidden lg:block"
-        style={{ width: '52%' }}
-        aria-hidden="true"
-      >
-        {/* Маска — плавне зникнення зліва */}
-        <div
-          className="absolute inset-0 z-10"
-          style={{ background: 'linear-gradient(to right, rgba(6,6,16,1) 0%, rgba(6,6,16,0.6) 20%, rgba(6,6,16,0.1) 45%, transparent 70%)' }}
-        />
-        {/* Маска знизу */}
-        <div
-          className="absolute inset-x-0 bottom-0 z-10 h-48"
-          style={{ background: 'linear-gradient(to top, rgba(6,6,16,1) 0%, transparent 100%)' }}
-        />
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover object-center"
-          style={{ mixBlendMode: 'screen', opacity: 0.85 }}
-        >
-          <source src="/castle-animated.mp4" type="video/mp4" />
-        </video>
-      </div>
-
       {/* ── Контент ── */}
-      <div className="relative z-10 w-full py-12 lg:w-1/2 lg:pl-8 xl:pl-16">
+      <div className="relative z-10 w-full flex items-center justify-center py-12">
         {children}
       </div>
 
