@@ -140,9 +140,27 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Підвантажуємо профіль користувача
+    const profile = await db.profile.findUnique({ where: { userId } })
+
     // Формуємо контекст для Claude
-    const systemPrompt = AGENT_PROMPTS[agentType]
+    const basePrompt = AGENT_PROMPTS[agentType]
     const tokenLimit = AGENT_TOKEN_LIMITS[agentType]
+
+    // Додаємо дані профілю до системного промпту (якщо заповнені)
+    let profileContext = ''
+    if (profile?.birthDate || profile?.birthTime || profile?.birthPlace) {
+      const parts: string[] = []
+      if (profile.birthDate) {
+        const d = new Date(profile.birthDate)
+        parts.push(`Дата народження: ${d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })}`)
+      }
+      if (profile.birthTime) parts.push(`Час народження: ${profile.birthTime}`)
+      if (profile.birthPlace) parts.push(`Місце народження: ${profile.birthPlace}`)
+      profileContext = `\n\n---\nПЕРСОНАЛЬНІ ДАНІ КОРИСТУВАЧА (використовуй їх в аналізі):\n${parts.join('\n')}\n---`
+    }
+
+    const systemPrompt = basePrompt + profileContext
 
     const messages = (conversation.messages ?? []).map((m) => ({
       role: m.role === 'USER' ? ('user' as const) : ('assistant' as const),
