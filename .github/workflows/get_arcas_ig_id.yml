@@ -5,16 +5,18 @@ jobs:
   get-id:
     runs-on: ubuntu-latest
     steps:
-      - name: Query ARCAS Instagram ID
+      - name: Query ARCAS Instagram ID via multiple methods
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           ARCAS_PAGE_ACCESS_TOKEN: ${{ secrets.ARCAS_PAGE_ACCESS_TOKEN }}
         run: |
-          echo "=== /me/accounts via IG_ACCESS_TOKEN ==="
-          curl -s "https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token&access_token=$IG_ACCESS_TOKEN"
+          echo "=== IG_ACCESS_TOKEN permissions ==="
+          curl -s "https://graph.facebook.com/v19.0/debug_token?input_token=$IG_ACCESS_TOKEN&access_token=$IG_ACCESS_TOKEN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps(d.get('data',{}).get('scopes',[])))"
+
           echo ""
-          echo "=== ARCAS page instagram_business_account via ARCAS_PAGE_ACCESS_TOKEN ==="
-          curl -s "https://graph.facebook.com/v19.0/1059568480573429?fields=instagram_business_account,connected_instagram_account&access_token=$ARCAS_PAGE_ACCESS_TOKEN"
+          echo "=== /me/accounts via IG_ACCESS_TOKEN (з instagram_business_account) ==="
+          curl -s "https://graph.facebook.com/v19.0/me/accounts?fields=id,name,instagram_business_account&access_token=$IG_ACCESS_TOKEN"
+
           echo ""
-          echo "=== instagram_accounts via ARCAS_PAGE_ACCESS_TOKEN ==="
-          curl -s "https://graph.facebook.com/v19.0/1059568480573429/instagram_accounts?fields=id,username&access_token=$ARCAS_PAGE_ACCESS_TOKEN"
+          echo "=== ARCAS page через ARCAS_PAGE_ACCESS_TOKEN з усіма IG полями ==="
+          curl -s "https://graph.facebook.com/v19.0/1059568480573429?fields=id,name,instagram_business_account,connected_instagram_account&access_token=$ARCAS_PAGE_ACCESS_TOKEN"
