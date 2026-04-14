@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import Link from 'next/link'
 import Image from 'next/image'
+import { mages } from '@/app/mages/mages-data'
 
 // Layout для авторизованої зони — з навігацією
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -38,20 +39,33 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         {/* Навігаційні посилання */}
         <nav className="flex-1 p-4 space-y-1">
           <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all text-sm">
-            <span>🏠</span> Головна
+            <span className="w-7 h-7 flex items-center justify-center rounded-full bg-white/5 text-base">🏠</span>
+            Головна
           </Link>
-          <Link href="/chat/LUNA" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all text-sm">
-            <span>🌙</span> LUNA — Астрологія
-          </Link>
-          <Link href="/chat/ARCAS" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all text-sm">
-            <span>🔮</span> ARCAS — Таро
-          </Link>
-          <Link href="/chat/NUMI" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all text-sm">
-            <span>✨</span> NUMI — Нумерологія
-          </Link>
-          <Link href="/chat/UMBRA" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all text-sm">
-            <span>🌑</span> UMBRA — Езо-психологія
-          </Link>
+          {mages.map((mage) => (
+            <Link
+              key={mage.id}
+              href={`/chat/${mage.name}`}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all text-sm group`}
+            >
+              <div
+                className={`relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border ${mage.borderColor}`}
+                style={{ boxShadow: `0 0 8px ${mage.glowColor.replace('0.5', '0.4')}` }}
+              >
+                <Image
+                  src={mage.portrait}
+                  alt={mage.name}
+                  fill
+                  className={`object-cover ${mage.portraitPosition}`}
+                  sizes="28px"
+                />
+              </div>
+              <span>
+                <span className={`font-semibold ${mage.textAccent} group-hover:opacity-100 opacity-80`}>{mage.name}</span>
+                {' '}<span className="text-white/40 text-xs">— {mage.role}</span>
+              </span>
+            </Link>
+          ))}
         </nav>
 
         {/* Профіль користувача */}
