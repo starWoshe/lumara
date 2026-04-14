@@ -478,7 +478,8 @@ export default function ChatPage() {
       </header>
 
       {/* ── Повідомлення ── */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6 space-y-4">
+      <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6">
+        <div className="flex flex-col justify-end min-h-full space-y-4">
         {messages.length === 0 && (
           <div className="text-center py-16">
             <div className={`w-24 h-24 rounded-full overflow-hidden border-2 ${agent.borderColor} mx-auto mb-4`}
@@ -534,6 +535,7 @@ export default function ChatPage() {
         ))}
 
         <div ref={bottomRef} />
+        </div>
       </div>
 
       {/* ── Поле вводу ── */}
