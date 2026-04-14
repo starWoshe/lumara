@@ -31,16 +31,19 @@ export default function HomePage() {
 
       {/* Hero секція */}
       <section className="pt-32 pb-24 px-6 text-center relative overflow-hidden min-h-screen flex flex-col justify-center">
-        {/* Фон — замок академії */}
-        <Image
-          src="/academy-castle.png"
-          alt=""
-          fill
-          className="object-cover object-bottom opacity-25"
-          priority
-        />
-        {/* Градієнт поверх замку */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90 pointer-events-none" />
+        {/* Фон — анімація руху планет */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
+          style={{ opacity: 0.75 }}
+        >
+          <source src="/planets-bg.mp4" type="video/mp4" />
+        </video>
+        {/* Градієнт поверх відео */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/85 pointer-events-none" />
         {/* Фонове світіння */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-lumara-600/10 rounded-full blur-3xl pointer-events-none" />
 
