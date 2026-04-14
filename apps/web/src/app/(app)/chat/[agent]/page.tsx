@@ -284,7 +284,7 @@ export default function ChatPage() {
         src={agent.room}
         alt=""
         fill
-        className="object-cover object-center opacity-35 pointer-events-none"
+        className="object-cover object-top opacity-35 pointer-events-none"
         priority
       />
       {/* Накладка-градієнт поверх кімнати */}
