@@ -61,7 +61,7 @@ export const mages: Mage[] = [
     abilities: ['Розклади Таро', 'Оракульні карти', 'Архетипний аналіз', 'Провісні читання'],
     stats: { sessions: '3 124', rating: '4.95', label: 'сесій проведено' },
     portrait: '/arcas-portrait-1.png',
-    portraitPosition: 'object-top',
+    portraitPosition: 'object-center',
     room: '/arcas-room.png',
     accentColor: 'from-purple-600 to-violet-600',
     glowColor: 'rgba(139,92,246,0.5)',
