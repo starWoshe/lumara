@@ -11,7 +11,7 @@ const MAGE_TEASERS = [
   { id: 'luna',  name: 'LUNA',  role: 'Астрологія',    portrait: '/luna-portrait-1.png',  accent: 'rgba(99,102,241,0.6)',  pos: 'object-top' },
   { id: 'arcas', name: 'ARCAS', role: 'Таро',          portrait: '/arcas-portrait-1.png', accent: 'rgba(139,92,246,0.6)', pos: 'object-[50%_55%]' },
   { id: 'numi',  name: 'NUMI',  role: 'Нумерологія',   portrait: '/numi-portrait-1.png',  accent: 'rgba(245,158,11,0.6)', pos: 'object-center' },
-  { id: 'umbra', name: 'UMBRA', role: 'Езо-психологія',portrait: '/umbra-portrait-1.png', accent: 'rgba(100,116,139,0.6)',pos: 'object-bottom' },
+  { id: 'umbra', name: 'UMBRA', role: 'Езо-психологія',portrait: '/umbra-portrait-1.png', accent: 'rgba(100,116,139,0.6)',pos: 'object-[50%_55%]' },
 ]
 
 function LoginForm() {

@@ -111,7 +111,7 @@ export const mages: Mage[] = [
     abilities: ['Тіньова робота', 'Архетипи Юнга', 'Медитації', 'Інтеграція частин'],
     stats: { sessions: '1 456', rating: '4.98', label: 'сесій проведено' },
     portrait: '/umbra-portrait-1.png',
-    portraitPosition: 'object-bottom',
+    portraitPosition: 'object-[50%_55%]',
     room: '/umbra-room.png',
     accentColor: 'from-slate-500 to-gray-600',
     glowColor: 'rgba(100,116,139,0.5)',
