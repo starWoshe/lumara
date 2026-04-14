@@ -79,7 +79,7 @@ export default function ProfilePage() {
         {/* Повне ім'я */}
         <div>
           <label className="block text-sm font-medium text-white/70 mb-2">
-            Повне ім'я <span className="text-white/30 font-normal">(для нумерологічного аналізу)</span>
+            {`Повне ім'я`} <span className="text-white/30 font-normal">(для нумерологічного аналізу)</span>
           </label>
           <input
             type="text"
@@ -150,7 +150,7 @@ export default function ProfilePage() {
         {/* Основний запит */}
         <div>
           <label className="block text-sm font-medium text-white/70 mb-2">
-            З чим ти до нас прийшов? <span className="text-white/30 font-normal">(необов'язково)</span>
+            З чим ти до нас прийшов? <span className="text-white/30 font-normal">(необов&apos;язково)</span>
           </label>
           <textarea
             value={form.goal ?? ''}
