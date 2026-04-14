@@ -40,3 +40,5 @@ coverage
 # Build artifacts
 tsconfig.tsbuildinfo
 next-env.d.ts
+
+.vercel
