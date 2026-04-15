@@ -1,34 +1,22 @@
 import { NextResponse } from 'next/server'
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync, readdirSync } from 'fs'
 import { join } from 'path'
 import { getAgentSystemPrompt, AgentType } from '@lumara/agents'
 
 export const dynamic = 'force-dynamic'
 
-function resolveAgentsDir(): string {
-  const candidates = [
-    join(process.cwd(), 'packages', 'agents'),
-    join(__dirname, '..', '..', '..', '..', '..', '..', 'packages', 'agents'),
-    join('/var/task', 'packages', 'agents'),
-    join('/var/task', 'apps', 'web', 'packages', 'agents'),
-  ]
-  for (const dir of candidates) {
-    try {
-      readFileSync(join(dir, '_shared', 'global-system-prompt.md'), 'utf-8')
-      return dir
-    } catch {
-      // ignore
-    }
+function listDir(path: string): string[] {
+  try {
+    return readdirSync(path)
+  } catch {
+    return []
   }
-  return candidates[0]
 }
 
 export async function GET() {
-  const dir = resolveAgentsDir()
   const agents: AgentType[] = ['LUNA', 'ARCAS', 'NUMI', 'UMBRA']
   const result: Record<string, any> = {
     cwd: process.cwd(),
-    resolvedDir: dir,
     agents: {},
   }
 
@@ -37,20 +25,38 @@ export async function GET() {
     result.agents[agent] = {
       promptLength: prompt.length,
       promptPreview: prompt.slice(0, 300),
-      hasGlobal: prompt.includes('LUMARA'),
     }
   }
 
-  // Перевіримо існування файлів
+  // Діагностика директорій
+  const candidates = [
+    join(process.cwd(), 'packages', 'agents'),
+    join(process.cwd(), '..', '..', 'packages', 'agents'),
+    '/var/task/packages/agents',
+    '/var/task/apps/web/packages/agents',
+    join(__dirname, '..', '..', '..', '..', '..', '..', 'packages', 'agents'),
+  ]
+
+  result.candidates = candidates.map((dir) => ({
+    path: dir,
+    exists: existsSync(dir),
+    sharedExists: existsSync(join(dir, '_shared')),
+    lunaExists: existsSync(join(dir, 'luna')),
+    files: existsSync(dir) ? listDir(dir) : [],
+  }))
+
+  // Спробуємо знайти будь-який global-system-prompt.md в /var/task
   try {
-    result.files = {
-      globalExists: !!readFileSync(join(dir, '_shared', 'global-system-prompt.md'), 'utf-8'),
-      lunaSystemExists: !!readFileSync(join(dir, 'luna', 'system-prompt.md'), 'utf-8'),
-      crossPromoExists: !!readFileSync(join(dir, '_shared', 'cross-promo.md'), 'utf-8'),
-      academyPromoExists: !!readFileSync(join(dir, '_shared', 'academy-promo.md'), 'utf-8'),
+    const varTaskFiles = listDir('/var/task')
+    result.varTaskRoot = varTaskFiles
+    if (existsSync('/var/task/packages')) {
+      result.packagesDir = listDir('/var/task/packages')
+      if (existsSync('/var/task/packages/agents')) {
+        result.agentsDir = listDir('/var/task/packages/agents')
+      }
     }
   } catch (e: any) {
-    result.fileError = e.message
+    result.scanError = e.message
   }
 
   return NextResponse.json(result)
