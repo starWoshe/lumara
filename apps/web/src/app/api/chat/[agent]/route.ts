@@ -3,20 +3,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { authOptions } from '@/lib/auth'
 import { db } from '@lumara/database'
-import { AGENT_PROMPTS, AGENT_TOKEN_LIMITS } from '@lumara/agents'
+import {
+  AgentType,
+  AGENT_MODELS,
+  AGENT_TOKEN_LIMITS,
+  getAgentSystemPrompt,
+  getAgentFirstMessage,
+  type ProfileLike,
+} from '@lumara/agents'
 import { sendMessageSchema } from '@lumara/shared'
 import { FREE_MESSAGES_LIMIT, PLANS } from '@/lib/stripe'
 
 export const maxDuration = 60
 
-// Ліниве створення клієнта — уникає проблем при відсутньому ключі під час збірки
 function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY не встановлено')
   return new Anthropic({ apiKey })
 }
 
-// Retry з exponential backoff для помилки 529 (overloaded)
 async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = 3,
@@ -39,38 +44,105 @@ async function withRetry<T>(
   throw lastError
 }
 
-export async function POST(req: NextRequest) {
+function buildProfileContext(
+  profile: Record<string, unknown> | null,
+  sessionName: string | null | undefined
+): string {
+  const parts: string[] = []
+  const displayName = (profile?.fullName as string) || sessionName
+  if (displayName) parts.push(`Ім'я: ${displayName}`)
+  if (profile?.gender) parts.push(`Стать: ${profile?.gender}`)
+  if (profile?.birthDate) {
+    const d = new Date(profile.birthDate as string)
+    parts.push(`Дата народження: ${d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })}`)
+  }
+  if (profile?.birthTime) parts.push(`Час народження: ${profile?.birthTime}`)
+  if (profile?.birthPlace) parts.push(`Місце народження: ${profile?.birthPlace}`)
+  if (profile?.goal) parts.push(`Основний запит/мета: ${profile?.goal}`)
+
+  if (parts.length === 0) return ''
+  return `\n\n---\nПЕРСОНАЛЬНІ ДАНІ КОРИСТУВАЧА (використовуй їх в аналізі без зайвих запитів — ці дані вже відомі):\n${parts.join('\n')}\n---`
+}
+
+function sseResponse(text: string, conversationId: string) {
+  const encoder = new TextEncoder()
+  const readable = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text }) }\n\n`))
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ conversationId, done: true }) }\n\n`))
+      controller.close()
+    },
+  })
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  })
+}
+
+export async function POST(req: NextRequest, { params }: { params: { agent: string } }) {
   try {
-    // Перевірка авторизації
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Не авторизовано' }, { status: 401 })
     }
 
-    // Валідація вхідних даних
+    const agentParam = params.agent.toUpperCase()
+    if (!['LUNA', 'ARCAS', 'NUMI', 'UMBRA'].includes(agentParam)) {
+      return NextResponse.json({ error: 'Невідомий агент' }, { status: 400 })
+    }
+    const agentType = agentParam as AgentType
+
     const body = await req.json()
     const parsed = sendMessageSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'Невірні дані', details: parsed.error.flatten() }, { status: 400 })
     }
 
-    const { agentType, content, conversationId } = parsed.data
-
-    // Переконуємось що userId є (може бути відсутній якщо JWT callback не спрацював)
+    const { conversationId, content, initiate } = parsed.data
     const userId = session.user.id
-    if (!userId) {
-      console.error('[chat/route] userId відсутній в session:', JSON.stringify(session))
-      return NextResponse.json({ error: 'Сесія пошкоджена, увійдіть знову' }, { status: 401 })
+
+    // Знаходимо або створюємо агента в БД
+    const agent = await db.agent.findUnique({ where: { type: agentType } })
+    if (!agent) {
+      return NextResponse.json({ error: 'Агент не знайдено' }, { status: 404 })
+    }
+
+    // --- Initiate flow: mage speaks first ---
+    if (initiate) {
+      const profile = await db.profile.findUnique({ where: { userId } })
+      const conversation = await db.conversation.create({
+        data: {
+          userId,
+          agentId: agent.id,
+          title: `Сесія з ${agentType}`,
+        },
+      })
+      const firstMessage = getAgentFirstMessage(agentType, profile as ProfileLike | undefined)
+      await db.message.create({
+        data: {
+          conversationId: conversation.id,
+          role: 'ASSISTANT',
+          content: firstMessage,
+        },
+      })
+      return sseResponse(firstMessage, conversation.id)
+    }
+
+    if (!content) {
+      return NextResponse.json({ error: "Повідомлення обов'язкове" }, { status: 400 })
     }
 
     // Перевірка ліміту повідомлень по плану
     const subscription = await db.subscription.findFirst({ where: { userId } })
-    const plan = subscription?.status === 'ACTIVE' || subscription?.status === 'TRIALING'
-      ? subscription.plan
-      : 'FREE'
+    const plan =
+      subscription?.status === 'ACTIVE' || subscription?.status === 'TRIALING'
+        ? subscription.plan
+        : 'FREE'
 
     if (plan === 'FREE') {
-      // Рахуємо всі повідомлення USER цього користувача за весь час
       const totalMessages = await db.message.count({
         where: {
           role: 'USER',
@@ -84,7 +156,6 @@ export async function POST(req: NextRequest) {
         )
       }
     } else if (plan === 'BASIC') {
-      // Рахуємо повідомлення за поточний платіжний період
       const periodStart = subscription!.currentPeriodStart ?? new Date(0)
       const monthMessages = await db.message.count({
         where: {
@@ -100,16 +171,8 @@ export async function POST(req: NextRequest) {
         )
       }
     }
-    // PRO і ELITE — безліміт, перевірка не потрібна
 
-    // Вибір моделі залежно від плану
     const aiModel = plan === 'ELITE' ? 'claude-opus-4-6' : 'claude-sonnet-4-6'
-
-    // Знаходимо або створюємо агента в БД
-    const agent = await db.agent.findUnique({ where: { type: agentType } })
-    if (!agent) {
-      return NextResponse.json({ error: 'Агент не знайдено' }, { status: 404 })
-    }
 
     // Знаходимо або створюємо сесію розмови
     let conversation
@@ -140,34 +203,30 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Підвантажуємо профіль користувача
     const profile = await db.profile.findUnique({ where: { userId } })
+    const profileContext = buildProfileContext(profile as Record<string, unknown> | null, session.user.name)
 
-    // Формуємо контекст для Claude
-    const basePrompt = AGENT_PROMPTS[agentType]
+    // --- Monetization & cross-promo logic ---
+    const previousMessages = conversation.messages ?? []
+    const totalMessages = previousMessages.length + 1 // + щойно збережене user message
+    const assistantCount = previousMessages.filter((m) => m.role === 'ASSISTANT').length
+    const stripeLiveMode = process.env.STRIPE_LIVE_MODE === 'true'
+
+    const includeMonetization = stripeLiveMode && totalMessages >= 12
+    const crossPromoRound = (assistantCount + 1) % 6 === 0
+    const cycle = Math.floor((assistantCount + 1) / 6)
+    const crossPromoVariant: 'peer' | 'academy' | undefined = crossPromoRound
+      ? (cycle % 2 === 1 ? 'peer' : 'academy')
+      : undefined
+
+    const basePrompt = getAgentSystemPrompt(agentType, {
+      includeMonetization,
+      crossPromoVariant,
+    })
+    const systemPrompt = basePrompt + profileContext
     const tokenLimit = AGENT_TOKEN_LIMITS[agentType]
 
-    // Додаємо дані профілю до системного промпту
-    const p = profile as Record<string, unknown> | null
-    const parts: string[] = []
-    const displayName = (p?.fullName as string) || session.user.name
-    if (displayName) parts.push(`Ім'я: ${displayName}`)
-    if (p?.gender) parts.push(`Стать: ${p.gender}`)
-    if (profile?.birthDate) {
-      const d = new Date(profile.birthDate)
-      parts.push(`Дата народження: ${d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })}`)
-    }
-    if (profile?.birthTime) parts.push(`Час народження: ${profile.birthTime}`)
-    if (profile?.birthPlace) parts.push(`Місце народження: ${profile.birthPlace}`)
-    if (p?.goal) parts.push(`Основний запит/мета: ${p.goal}`)
-
-    const profileContext = parts.length > 0
-      ? `\n\n---\nПЕРСОНАЛЬНІ ДАНІ КОРИСТУВАЧА (використовуй їх в аналізі без зайвих запитів — ці дані вже відомі):\n${parts.join('\n')}\n---`
-      : ''
-
-    const systemPrompt = basePrompt + profileContext
-
-    const messages = (conversation.messages ?? []).map((m) => ({
+    const messages = previousMessages.map((m) => ({
       role: m.role === 'USER' ? ('user' as const) : ('assistant' as const),
       content: m.content,
     }))
@@ -175,9 +234,6 @@ export async function POST(req: NextRequest) {
 
     const anthropic = getAnthropicClient()
 
-    // Збираємо повну відповідь з retry для 529 overloaded.
-    // Використовуємо create() замість stream() — так помилка 529 кидається одразу,
-    // а не під час читання стріму, що дозволяє retry відпрацювати до початку стріму клієнту.
     let responseText: string
     try {
       const response = await withRetry(() =>
@@ -193,7 +249,8 @@ export async function POST(req: NextRequest) {
         .map((b) => (b as { type: 'text'; text: string }).text)
         .join('')
     } catch (apiErr) {
-      const isOverloaded = apiErr instanceof Anthropic.APIError && (apiErr.status === 529 || apiErr.status === 503)
+      const isOverloaded =
+        apiErr instanceof Anthropic.APIError && (apiErr.status === 529 || apiErr.status === 503)
       console.error('[chat/route] API помилка після всіх спроб:', apiErr)
       return NextResponse.json(
         {
@@ -206,33 +263,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Зберігаємо відповідь агента в БД
     await db.message.create({
       data: {
-        conversationId: conversation!.id,
+        conversationId: conversation.id,
         role: 'ASSISTANT',
         content: responseText,
       },
     })
 
-    // Симулюємо SSE-стрім для сумісності з клієнтом
-    const encoder = new TextEncoder()
-    const readable = new ReadableStream({
-      start(controller) {
-        // Надсилаємо текст одним чанком (без streaming затримок)
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: responseText })}\n\n`))
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ conversationId: conversation!.id, done: true })}\n\n`))
-        controller.close()
-      },
-    })
-
-    return new Response(readable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      },
-    })
+    return sseResponse(responseText, conversation.id)
   } catch (error) {
     console.error('[chat/route] помилка:', error)
     return NextResponse.json({ error: String(error) }, { status: 500 })

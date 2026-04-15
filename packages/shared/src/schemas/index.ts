@@ -5,8 +5,8 @@ import { z } from 'zod'
 // Схема для повідомлень агенту
 export const sendMessageSchema = z.object({
   conversationId: z.string().uuid().optional(),
-  agentType: z.enum(['LUNA', 'ARCAS', 'NUMI', 'UMBRA']),
-  content: z.string().min(1).max(4000),
+  content: z.string().min(1).max(4000).optional(),
+  initiate: z.boolean().optional(),
 })
 
 // Схема для реєстрації користувача

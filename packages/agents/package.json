@@ -10,10 +10,11 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.9",
-    "openai": "^4.47.1",
-    "@lumara/shared": "workspace:*"
+    "@lumara/shared": "workspace:*",
+    "openai": "^4.47.1"
   },
   "devDependencies": {
+    "@types/node": "^20.19.37",
     "typescript": "^5.4.5"
   }
 }

@@ -24,6 +24,7 @@ const nextConfig = {
       '/**': [
         'node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/**',
         'node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client/libquery_engine*',
+        'packages/agents/**/*.md',
       ],
     },
   },

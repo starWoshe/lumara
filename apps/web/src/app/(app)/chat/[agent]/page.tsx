@@ -198,12 +198,74 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [conversationId, setConversationId] = useState<string | undefined>()
+  const [hasInitiated, setHasInitiated] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    if (!conversationId && messages.length === 0 && !isLoading && !hasInitiated) {
+      setHasInitiated(true)
+      initiateChat()
+    }
+  }, [conversationId, messages.length, isLoading, hasInitiated])
+
+  async function initiateChat() {
+    setIsLoading(true)
+    try {
+      const res = await fetch(`/api/chat/${agentType.toLowerCase()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initiate: true }),
+      })
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.message || errData.error || `HTTP ${res.status}`)
+      }
+
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+      let assistantMessage = ''
+
+      setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const data = JSON.parse(line.slice(6))
+
+          if (data.text) {
+            assistantMessage += data.text
+            setMessages((prev) => {
+              const updated = [...prev]
+              updated[updated.length - 1] = { role: 'assistant', content: assistantMessage }
+              return updated
+            })
+          }
+
+          if (data.conversationId) {
+            setConversationId(data.conversationId)
+          }
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Невідома помилка'
+      setMessages((prev) => [...prev, { role: 'assistant', content: `Помилка: ${msg}` }])
+    } finally {
+      setIsLoading(false)
+      textareaRef.current?.focus()
+    }
+  }
 
   async function sendMessage() {
     const text = input.trim()
@@ -214,10 +276,10 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, { role: 'user', content: text }])
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch(`/api/chat/${agentType.toLowerCase()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentType, content: text, conversationId }),
+        body: JSON.stringify({ content: text, conversationId }),
       })
 
       if (!res.ok) {
@@ -496,8 +558,8 @@ export default function ChatPage() {
                   <div className="w-full h-full flex items-center justify-center text-4xl bg-white/5">{agent.emoji}</div>
                 )}
               </div>
-              <p className="text-white/60 text-lg font-display">Привіт! Я {agent.name}.</p>
-              <p className="text-white/30 text-sm mt-1 max-w-xs mx-auto">{agent.placeholder}</p>
+              <p className="text-white/60 text-lg font-display">[{agent.name}] вже знає твоє ім'я.</p>
+              <p className="text-white/30 text-sm mt-1 max-w-xs mx-auto">Перші 15 повідомлень — повністю безкоштовно.</p>
             </div>
           </div>
         ) : (

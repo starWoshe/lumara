@@ -182,6 +182,9 @@ importers:
         specifier: ^4.47.1
         version: 4.104.0(ws@8.20.0)(zod@3.25.76)
     devDependencies:
+      '@types/node':
+        specifier: ^20.19.37
+        version: 20.19.37
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
