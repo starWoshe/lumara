@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server'
-import { existsSync, readdirSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { getAgentSystemPrompt, AgentType } from '@lumara/agents'
 
 export const dynamic = 'force-dynamic'
-
-function listDir(path: string): string[] {
-  try {
-    return readdirSync(path)
-  } catch {
-    return []
-  }
-}
 
 export async function GET() {
   const agents: AgentType[] = ['LUNA', 'ARCAS', 'NUMI', 'UMBRA']
@@ -30,24 +22,21 @@ export async function GET() {
       academyLength: academy.length,
       hasPeer: peer.length > base.length,
       hasAcademy: academy.length > base.length,
-      peerPreview: peer.slice(base.length, base.length + 200),
-      academyPreview: academy.slice(base.length, base.length + 200),
     }
   }
 
-  // Діагностика директорій
-  const candidates = [
-    join(process.cwd(), 'packages', 'agents'),
-    join(process.cwd(), '..', '..', 'packages', 'agents'),
-    '/var/task/packages/agents',
-    '/var/task/apps/web/packages/agents',
-  ]
-
-  result.candidates = candidates.map((dir) => ({
-    path: dir,
-    exists: existsSync(dir),
-    files: existsSync(dir) ? listDir(dir) : [],
-  }))
+  const agentsDir = '/var/task/packages/agents'
+  result.rawFiles = {
+    crossPromoLength: (() => {
+      try { return readFileSync(join(agentsDir, '_shared', 'cross-promo.md'), 'utf-8').length } catch { return -1 }
+    })(),
+    academyPromoLength: (() => {
+      try { return readFileSync(join(agentsDir, '_shared', 'academy-promo.md'), 'utf-8').length } catch { return -1 }
+    })(),
+    crossPromoPreview: (() => {
+      try { return readFileSync(join(agentsDir, '_shared', 'cross-promo.md'), 'utf-8').slice(0, 200) } catch (e: any) { return e.message }
+    })(),
+  }
 
   return NextResponse.json(result)
 }
