@@ -20,12 +20,19 @@ export const AGENT_TOKEN_LIMITS: Record<AgentType, number> = {
 function resolveAgentsDir(): string {
   const candidates: string[] = []
 
-  // 1. Relative to project root (local dev / Vercel with outputFileTracing)
+  // 1. Relative to project root (local dev)
   candidates.push(join(process.cwd(), 'packages', 'agents'))
 
-  // 2. Relative to this file (bundled server code in CommonJS)
+  // 2. From apps/web up to monorepo root (Vercel serverless function cwd)
+  candidates.push(join(process.cwd(), '..', '..', 'packages', 'agents'))
+
+  // 3. Absolute Vercel path with outputFileTracingRoot
+  candidates.push('/var/task/packages/agents')
+
+  // 4. Relative to this file (bundled server code)
   try {
     candidates.push(join(__dirname, '..', '..'))
+    candidates.push(join(__dirname, '..', '..', '..', '..', 'packages', 'agents'))
   } catch {
     /* ignore */
   }
