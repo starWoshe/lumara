@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
 
@@ -206,14 +206,7 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  useEffect(() => {
-    if (!conversationId && messages.length === 0 && !isLoading && !hasInitiated) {
-      setHasInitiated(true)
-      initiateChat()
-    }
-  }, [conversationId, messages.length, isLoading, hasInitiated])
-
-  async function initiateChat() {
+  const initiateChat = useCallback(async () => {
     setIsLoading(true)
     try {
       const res = await fetch(`/api/chat/${agentType.toLowerCase()}`, {
@@ -265,7 +258,14 @@ export default function ChatPage() {
       setIsLoading(false)
       textareaRef.current?.focus()
     }
-  }
+  }, [agentType])
+
+  useEffect(() => {
+    if (!conversationId && messages.length === 0 && !isLoading && !hasInitiated) {
+      setHasInitiated(true)
+      initiateChat()
+    }
+  }, [conversationId, messages.length, isLoading, hasInitiated, initiateChat])
 
   async function sendMessage() {
     const text = input.trim()
@@ -558,7 +558,7 @@ export default function ChatPage() {
                   <div className="w-full h-full flex items-center justify-center text-4xl bg-white/5">{agent.emoji}</div>
                 )}
               </div>
-              <p className="text-white/60 text-lg font-display">[{agent.name}] вже знає твоє ім'я.</p>
+              <p className="text-white/60 text-lg font-display">[{agent.name}] вже знає твоє ім&apos;я.</p>
               <p className="text-white/30 text-sm mt-1 max-w-xs mx-auto">Перші 15 повідомлень — повністю безкоштовно.</p>
             </div>
           </div>
