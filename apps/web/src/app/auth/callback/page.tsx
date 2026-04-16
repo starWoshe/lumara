@@ -31,8 +31,6 @@ function CallbackHandler() {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
         if (error || !data.session) {
           console.error('[callback] PKCE exchange failed:', error)
-          // Якщо PKCE не вдався через відсутній verifier — пробуємо implicit flow
-          console.log('[callback] PKCE не вдався, перевіряємо hash на access_token')
         } else {
           accessToken = data.session.access_token
           refreshToken = data.session.refresh_token
@@ -50,8 +48,20 @@ function CallbackHandler() {
         }
       }
 
+      // Варіант 3: Вже існуюча сесія (наприклад, користувач вже увійшов)
       if (!accessToken) {
-        console.error('[callback] ні code, ні access_token не знайдено')
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data, error } = await supabase.auth.getSession()
+        if (!error && data.session) {
+          accessToken = data.session.access_token
+          refreshToken = data.session.refresh_token
+          console.log('[callback] знайдено існуючу сесію через getSession()')
+        }
+      }
+
+      if (!accessToken) {
+        console.error('[callback] ні code, ні access_token, ні існуюча сесія не знайдені')
         console.error('[callback] поточний URL:', window.location.href)
         setErrorInfo('Помилка: не вдалося отримати токен авторизації. Спробуй увійти знову.')
         return
