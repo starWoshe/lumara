@@ -53,9 +53,12 @@ function CallbackHandler() {
   }, [router, searchParams])
 
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-4 p-6 text-center">
+    <div className="relative flex h-screen flex-col items-center justify-center gap-4 p-6 text-center">
       <p className="text-white/60">Вхід виконується...</p>
-      <pre className="max-w-full overflow-auto rounded bg-black/50 p-4 text-xs text-white/80">
+      <pre
+        className="fixed left-4 top-4 z-[9999] max-h-[80vh] max-w-[90vw] overflow-auto rounded border border-yellow-500 bg-black p-4 text-xs text-yellow-400 shadow-2xl"
+        style={{ boxShadow: '0 0 30px rgba(234,179,8,0.5)' }}
+      >
         {debugInfo}
       </pre>
     </div>
