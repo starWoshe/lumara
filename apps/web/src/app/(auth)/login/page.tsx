@@ -34,6 +34,8 @@ function LoginForm() {
         console.error('Supabase OAuth error:', error)
         alert('Помилка входу: ' + error.message)
       } else if (data?.url) {
+        console.log('Redirecting to OAuth URL in 3s...')
+        await new Promise((resolve) => setTimeout(resolve, 3000))
         window.location.href = data.url
       } else {
         console.error('No URL returned from Supabase OAuth')

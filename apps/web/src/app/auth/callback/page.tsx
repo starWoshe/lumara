@@ -3,6 +3,10 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
+// Сторінка має бути динамічною, щоб Vercel не кешував стару версію
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 function CallbackHandler() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<string>('Авторизація...')
@@ -10,6 +14,10 @@ function CallbackHandler() {
 
   useEffect(() => {
     async function doLogin() {
+      console.log('[callback] СТАРТ doLogin')
+      // Затримка для можливості відкрити консоль (F12)
+      await new Promise((resolve) => setTimeout(resolve, 5000))
+
       const errorParam = searchParams.get('error')
       const errorDesc = searchParams.get('error_description')
       const next = searchParams.get('next') ?? '/dashboard'
