@@ -11,7 +11,15 @@ function CallbackHandler() {
 
   useEffect(() => {
     const code = searchParams.get('code')
+    const errorParam = searchParams.get('error')
+    const errorDesc = searchParams.get('error_description')
     const next = searchParams.get('next') ?? '/dashboard'
+
+    if (errorParam || errorDesc) {
+      const details = errorDesc || errorParam || 'unknown_error'
+      router.push(`/login?error=callback&details=${encodeURIComponent(details)}`)
+      return
+    }
 
     if (!code) {
       router.push('/login?error=callback&details=no_code')
