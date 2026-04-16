@@ -20,14 +20,29 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
 
   async function handleSignIn() {
+    console.log('Button clicked, callbackUrl:', callbackUrl)
     setLoading(true)
-    const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackUrl)}`,
-      },
-    })
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackUrl)}`,
+        },
+      })
+      if (error) {
+        console.error('Supabase OAuth error:', error)
+        alert('Помилка входу: ' + error.message)
+      } else if (data?.url) {
+        window.location.href = data.url
+      } else {
+        console.error('No URL returned from Supabase OAuth')
+        alert('Не вдалося отримати посилання для входу')
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      alert('Неочікувана помилка: ' + (err instanceof Error ? err.message : String(err)))
+    }
     setLoading(false)
   }
 
