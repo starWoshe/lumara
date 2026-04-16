@@ -5,28 +5,6 @@ import { useSearchParams } from 'next/navigation'
 
 function CallbackHandler() {
   const searchParams = useSearchParams()
-
-  // Витягуємо hash ОДИН РАЗ при ініціалізації компонента, ДО будь-яких ефектів
-  const [tokens] = useState(() => {
-    if (typeof window === 'undefined') {
-      console.log('[callback] window undefined на момент ініціалізації')
-      return null
-    }
-    const rawHash = window.location.hash
-    console.log('[callback] raw window.location.hash:', JSON.stringify(rawHash))
-    const hash = rawHash.substring(1)
-    const params = new URLSearchParams(hash)
-    const result = {
-      accessToken: params.get('access_token'),
-      refreshToken: params.get('refresh_token'),
-    }
-    console.log('[callback] parsed tokens:', {
-      hasAccessToken: !!result.accessToken,
-      hasRefreshToken: !!result.refreshToken,
-    })
-    return result
-  })
-
   const [status, setStatus] = useState<string>('Авторизація...')
 
   useEffect(() => {
@@ -41,9 +19,36 @@ function CallbackHandler() {
         return
       }
 
-      if (!tokens?.accessToken) {
-        console.error('[callback] missing access_token. tokens:', tokens)
-        setStatus('Помилка: не вдалося отримати access_token з URL. Спробуй увійти знову.')
+      // Читаємо hash на клієнті після гідратації
+      const hash = window.location.hash.substring(1)
+      const hashParams = new URLSearchParams(hash)
+      let accessToken = hashParams.get('access_token')
+      let refreshToken = hashParams.get('refresh_token')
+
+      console.log('[callback] raw hash:', JSON.stringify(hash.slice(0, 100)))
+      console.log('[callback] has accessToken:', !!accessToken)
+
+      // Fallback PKCE: якщо hash порожній, але є code в query params
+      const code = searchParams.get('code')
+      if (code && !accessToken) {
+        console.log('[callback] спроба PKCE exchange для code:', code.slice(0, 10) + '...')
+        setStatus('Обмін code на сесію...')
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error || !data.session) {
+          console.error('[callback] PKCE exchange failed:', error)
+          setStatus(`Обмін не вдався: ${error?.message || 'no session'}`)
+          return
+        }
+        accessToken = data.session.access_token
+        refreshToken = data.session.refresh_token
+        console.log('[callback] PKCE exchange успішний')
+      }
+
+      if (!accessToken) {
+        console.error('[callback] access_token відсутній і code відсутній')
+        setStatus('Помилка: не вдалося отримати токен авторизації. Спробуй увійти знову.')
         return
       }
 
@@ -53,13 +58,13 @@ function CallbackHandler() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          access_token: tokens.accessToken,
-          refresh_token: tokens.refreshToken,
+          access_token: accessToken,
+          refresh_token: refreshToken,
         }),
       })
 
       const data = await res.json().catch(() => ({ error: 'parse_failed' }))
-      console.log('[callback] server response:', { status: res.status, data })
+      console.log('[callback] відповідь сервера:', { status: res.status, data })
 
       if (!res.ok || !data.success) {
         const msg = data.error || data.details || 'unknown'
@@ -71,7 +76,7 @@ function CallbackHandler() {
     }
 
     doLogin()
-  }, [searchParams, tokens])
+  }, [searchParams])
 
   return (
     <div className="flex h-screen flex-col items-center justify-center gap-4 p-6 text-center">
