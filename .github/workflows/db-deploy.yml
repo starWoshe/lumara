@@ -53,12 +53,12 @@ jobs:
         run: |
           if [ -f "packages/database/supabase-migration.sql" ]; then
             echo "Applying supabase-migration.sql..."
-            psql '${DIRECT_URL}' -f packages/database/supabase-migration.sql
+            psql "$DIRECT_URL" -f packages/database/supabase-migration.sql
           fi
 
       - name: Apply Supabase RLS Policies
         run: |
           if [ -f "packages/database/rls-policies.sql" ]; then
             echo "Applying rls-policies.sql..."
-            psql '${DIRECT_URL}' -f packages/database/rls-policies.sql
+            psql "$DIRECT_URL" -f packages/database/rls-policies.sql
           fi
