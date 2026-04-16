@@ -6,28 +6,37 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'woshem68@gmail.com'
 
 export async function POST(request: Request) {
   try {
-    const { access_token, refresh_token } = await request.json()
+    const body = await request.json()
+    const { access_token, refresh_token } = body
 
     if (!access_token) {
       return NextResponse.json({ error: 'missing_token' }, { status: 400 })
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing env vars:', { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey })
+      return NextResponse.json({ error: 'missing_env' }, { status: 500 })
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
 
     const { data: { user }, error: userError } = await supabase.auth.getUser(access_token)
 
-    if (userError || !user?.email) {
+    if (userError) {
       console.error('getUser error:', userError)
-      return NextResponse.json({ error: 'invalid_token' }, { status: 401 })
+      return NextResponse.json({ error: 'invalid_token', details: userError.message }, { status: 401 })
+    }
+
+    if (!user?.email) {
+      return NextResponse.json({ error: 'no_user_email' }, { status: 401 })
     }
 
     const isAdmin = user.email === ADMIN_EMAIL
@@ -59,8 +68,10 @@ export async function POST(request: Request) {
       where: { userId: dbUser.id },
       update: {},
       create: { userId: dbUser.id, language: 'uk', timezone: 'Europe/Kiev' },
-      
-    }).catch(() => null)
+    }).catch((err) => {
+      console.error('Profile upsert error:', err)
+      return null
+    })
 
     await db.activityLog.create({
       data: {
@@ -68,11 +79,14 @@ export async function POST(request: Request) {
         action: 'SIGN_IN',
         metadata: { provider: 'google' },
       },
-    }).catch(() => null)
+    }).catch((err) => {
+      console.error('Activity log error:', err)
+      return null
+    })
 
     return NextResponse.json({ success: true, userId: dbUser.id })
-  } catch (err) {
-    console.error('Auth sync error:', err)
-    return NextResponse.json({ error: 'server_error' }, { status: 500 })
+  } catch (err: any) {
+    console.error('Auth sync fatal error:', err?.message || err)
+    return NextResponse.json({ error: 'server_error', details: err?.message || String(err) }, { status: 500 })
   }
 }
