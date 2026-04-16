@@ -76,10 +76,16 @@ export async function POST(request: Request) {
       }
     )
 
-    await ssrClient.auth.setSession({
+    const { error: sessionError } = await ssrClient.auth.setSession({
       access_token,
       refresh_token: refresh_token || '',
     })
+    if (sessionError) {
+      return corsResponse({ error: 'setSession_failed', details: sessionError.message }, 401, origin)
+    }
+
+    // Змушуємо ssr client записати cookies
+    await ssrClient.auth.getSession()
 
     const email = user.email
     const isAdmin = email === ADMIN_EMAIL
