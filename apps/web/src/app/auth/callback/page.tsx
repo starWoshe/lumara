@@ -16,17 +16,9 @@ function CallbackHandler() {
       params[key] = value
     })
 
-    const storage: Record<string, string | null> = {}
-    if (typeof window !== 'undefined') {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.includes('supabase') && key.includes('verifier')) {
-          storage[key] = localStorage.getItem(key)
-        }
-      }
-    }
+    const hash = typeof window !== 'undefined' ? window.location.hash : ''
 
-    setInfo(JSON.stringify({ params, storage, url: typeof window !== 'undefined' ? window.location.href : null }, null, 2))
+    setInfo(JSON.stringify({ params, hash: hash.slice(0, 200), url: typeof window !== 'undefined' ? window.location.href : null }, null, 2))
   }, [searchParams])
 
   async function proceed() {
@@ -40,17 +32,31 @@ function CallbackHandler() {
       return
     }
 
-    if (!code) {
-      window.location.href = '/login?error=callback&details=no_code'
-      return
-    }
+    const hash = typeof window !== 'undefined' ? window.location.hash.substring(1) : ''
+    const hashParams = new URLSearchParams(hash)
+    const accessToken = hashParams.get('access_token')
+    const refreshToken = hashParams.get('refresh_token')
 
     setDone(true)
     const supabase = createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (error) {
-      window.location.href = `/login?error=callback&details=${encodeURIComponent(error.message)}`
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code)
+      if (error) {
+        window.location.href = `/login?error=callback&details=${encodeURIComponent(error.message)}`
+        return
+      }
+    } else if (accessToken) {
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken || '',
+      })
+      if (error) {
+        window.location.href = `/login?error=callback&details=${encodeURIComponent(error.message)}`
+        return
+      }
+    } else {
+      window.location.href = '/login?error=callback&details=no_token_or_code'
       return
     }
 
