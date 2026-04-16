@@ -7,74 +7,69 @@ import { syncUserAfterAuth } from './actions'
 
 function CallbackHandler() {
   const searchParams = useSearchParams()
-  const [info, setInfo] = useState<string>('Збір даних...')
-  const [done, setDone] = useState(false)
+  const [status, setStatus] = useState<string>('Автоматичний вхід...')
 
   useEffect(() => {
-    const params: Record<string, string> = {}
-    searchParams.forEach((value, key) => {
-      params[key] = value
-    })
+    async function run() {
+      const code = searchParams.get('code')
+      const next = searchParams.get('next') ?? '/dashboard'
+      const errorParam = searchParams.get('error')
+      const errorDesc = searchParams.get('error_description')
 
-    const hash = typeof window !== 'undefined' ? window.location.hash : ''
+      if (errorParam || errorDesc) {
+        setStatus(`Помилка Google: ${errorDesc || errorParam}`)
+        return
+      }
 
-    setInfo(JSON.stringify({ params, hash: hash.slice(0, 200), url: typeof window !== 'undefined' ? window.location.href : null }, null, 2))
+      const hash = typeof window !== 'undefined' ? window.location.hash.substring(1) : ''
+      const hashParams = new URLSearchParams(hash)
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+      const expiresAt = hashParams.get('expires_at')
+      const tokenType = hashParams.get('token_type')
+      const providerToken = hashParams.get('provider_token')
+
+      const supabase = createClient()
+
+      if (code) {
+        setStatus('Обмін code на сесію...')
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          setStatus(`Помилка exchangeCodeForSession: ${error.message}`)
+          return
+        }
+      } else if (accessToken) {
+        setStatus('Встановлення сесії з access_token...')
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        })
+        if (error) {
+          setStatus(`Помилка setSession: ${error.message}`)
+          return
+        }
+      } else {
+        setStatus('Помилка: немає code і немає access_token')
+        return
+      }
+
+      setStatus('Синхронізація з базою...')
+      const user = await syncUserAfterAuth()
+      if (!user) {
+        setStatus('Помилка: користувача не знайдено після синхронізації')
+        return
+      }
+
+      setStatus(`Успіх! Перенаправлення...`)
+      window.location.href = next
+    }
+
+    run()
   }, [searchParams])
-
-  async function proceed() {
-    const code = searchParams.get('code')
-    const next = searchParams.get('next') ?? '/dashboard'
-    const errorParam = searchParams.get('error')
-    const errorDesc = searchParams.get('error_description')
-
-    if (errorParam || errorDesc) {
-      window.location.href = `/login?error=callback&details=${encodeURIComponent(errorDesc || errorParam || 'unknown_error')}`
-      return
-    }
-
-    const hash = typeof window !== 'undefined' ? window.location.hash.substring(1) : ''
-    const hashParams = new URLSearchParams(hash)
-    const accessToken = hashParams.get('access_token')
-    const refreshToken = hashParams.get('refresh_token')
-
-    setDone(true)
-    const supabase = createClient()
-
-    if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code)
-      if (error) {
-        window.location.href = `/login?error=callback&details=${encodeURIComponent(error.message)}`
-        return
-      }
-    } else if (accessToken) {
-      const { error } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken || '',
-      })
-      if (error) {
-        window.location.href = `/login?error=callback&details=${encodeURIComponent(error.message)}`
-        return
-      }
-    } else {
-      window.location.href = '/login?error=callback&details=no_token_or_code'
-      return
-    }
-
-    await syncUserAfterAuth()
-    window.location.href = next
-  }
 
   return (
     <div className="fixed left-4 top-4 z-[9999] max-h-[90vh] max-w-[90vw] overflow-auto rounded border-2 border-yellow-500 bg-black p-4 text-xs text-yellow-400 shadow-2xl">
-      <pre className="whitespace-pre-wrap">{info}</pre>
-      {!done && (
-        <button
-          onClick={proceed}
-          className="mt-4 w-full rounded bg-yellow-500 px-3 py-2 font-bold text-black hover:bg-yellow-400"
-        >
-          Продовжити вхід
-        </button>
-      )}
+      <pre className="whitespace-pre-wrap">{status}</pre>
     </div>
   )
 }
