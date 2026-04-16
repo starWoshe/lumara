@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { syncUserAfterAuth } from './actions'
 
-export default function AuthCallbackPage() {
+function CallbackHandler() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -18,9 +18,11 @@ export default function AuthCallbackPage() {
       return
     }
 
+    const authCode = code
+
     async function exchange() {
       const supabase = createClient()
-      const { error } = await supabase.auth.exchangeCodeForSession(code)
+      const { error } = await supabase.auth.exchangeCodeForSession(authCode)
 
       if (error) {
         router.push(`/login?error=callback&details=${encodeURIComponent(error.message)}`)
@@ -38,5 +40,13 @@ export default function AuthCallbackPage() {
     <div className="flex h-screen items-center justify-center">
       <p className="text-white/60">Вхід виконується...</p>
     </div>
+  )
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense>
+      <CallbackHandler />
+    </Suspense>
   )
 }
