@@ -96,7 +96,9 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({ success: true, userId })
     cookiesToSet.forEach(({ name, value, options }) => {
-      response.cookies.set(name, value, options)
+      const opts = { ...options }
+      if (!opts.path) opts.path = '/'
+      response.cookies.set(name, value, opts)
     })
     return response
   } catch (err: any) {
