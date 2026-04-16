@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { useState, Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { loginWithGoogle } from './actions'
 
 // Короткі образи магів — з'являються під карточкою
 const MAGE_TEASERS = [
@@ -20,30 +20,18 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
 
   async function handleSignIn() {
-    console.log('Button clicked, callbackUrl:', callbackUrl)
     setLoading(true)
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackUrl)}`,
-        },
-      })
-      if (error) {
-        console.error('Supabase OAuth error:', error)
-        alert('Помилка входу: ' + error.message)
-      } else if (data?.url) {
-        window.location.href = data.url
-      } else {
-        console.error('No URL returned from Supabase OAuth')
-        alert('Не вдалося отримати посилання для входу')
+      await loginWithGoogle(callbackUrl)
+    } catch (err: any) {
+      // redirect() throws a NEXT_REDIRECT error that Next.js handles automatically
+      if (err?.message?.includes('NEXT_REDIRECT')) {
+        return
       }
-    } catch (err) {
-      console.error('Unexpected error:', err)
-      alert('Неочікувана помилка: ' + (err instanceof Error ? err.message : String(err)))
+      console.error('OAuth error:', err)
+      alert('Помилка входу: ' + (err?.message || 'Неочікувана помилка'))
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
