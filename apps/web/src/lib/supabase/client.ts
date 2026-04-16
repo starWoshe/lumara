@@ -26,7 +26,8 @@ export function createClient() {
               })
               .filter(Boolean)
               .join('; ')
-            document.cookie = `${name}=${value}${opts ? `; ${opts}` : ''}`
+            const hasPath = opts.includes('path=')
+            document.cookie = `${name}=${value}${opts ? `; ${opts}` : ''}${hasPath ? '' : '; path=/'}`
           })
         },
       },
