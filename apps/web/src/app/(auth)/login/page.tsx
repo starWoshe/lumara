@@ -22,11 +22,9 @@ function LoginForm() {
   async function handleSignIn() {
     setLoading(true)
     try {
-      await loginWithGoogle(callbackUrl)
+      const url = await loginWithGoogle(callbackUrl)
+      window.location.href = url
     } catch (err: any) {
-      if (err?.message?.includes('NEXT_REDIRECT')) {
-        return
-      }
       console.error('OAuth error:', err)
       alert('Помилка входу: ' + (err?.message || 'Неочікувана помилка'))
       setLoading(false)

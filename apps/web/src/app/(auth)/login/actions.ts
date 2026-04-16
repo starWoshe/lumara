@@ -2,7 +2,6 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 
 export async function loginWithGoogle(callbackUrl: string = '/dashboard') {
   const cookieStore = await cookies()
@@ -40,5 +39,7 @@ export async function loginWithGoogle(callbackUrl: string = '/dashboard') {
     throw new Error('No OAuth URL returned')
   }
 
-  redirect(data.url)
+  // НЕ робимо redirect() — повертаємо URL, щоб клієнт сам редіректив
+  // Це гарантує, що Set-Cookie заголовки з code_verifier дійдуть до браузера
+  return data.url
 }
