@@ -36,13 +36,14 @@ export async function updateSession(request: NextRequest) {
   )
 
   const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  const user = session?.user ?? null
 
   console.log(
-    '[middleware] getUser:',
-    { userId: user?.id ?? null, error: userError?.message ?? null }
+    '[middleware] getSession:',
+    { userId: user?.id ?? null, hasSession: !!session }
   )
 
   return { response: supabaseResponse, user }
