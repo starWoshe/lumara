@@ -1,13 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-import { randomUUID } from 'crypto'
+import { NextRequest, NextResponse } from 'next/server'
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'woshem68@gmail.com'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/dashboard'
@@ -16,7 +14,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`)
   }
 
-  const cookieStore = cookies()
+  // Створюємо redirect response одразу — куки ставимо прямо на нього
+  const response = NextResponse.redirect(`${origin}${next}`)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,16 +23,12 @@ export async function GET(request: Request) {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // Server Component — ігноруємо, middleware оновить сесію
-          }
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
         },
       },
     }
@@ -41,7 +36,7 @@ export async function GET(request: Request) {
 
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
   if (exchangeError) {
-    console.error('exchangeCodeForSession error:', exchangeError)
+    console.error('[callback] exchangeCodeForSession error:', exchangeError)
     return NextResponse.redirect(`${origin}/login?error=exchange_failed`)
   }
 
@@ -50,9 +45,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=user_not_found`)
   }
 
-  console.log('[callback] user:', user.email, 'cookies after exchange:', cookieStore.getAll().map(c => c.name))
+  console.log('[callback] user:', user.email, user.id)
 
-  // Синхронізація з базою через Supabase REST API
+  // Синхронізація з таблицею users через REST API (service key обходить RLS)
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -70,23 +65,21 @@ export async function GET(request: Request) {
     null
   const isAdmin = user.email === ADMIN_EMAIL
   const role = isAdmin ? 'ADMIN' : 'USER'
+  const userId = user.id // завжди використовуємо Supabase Auth UUID
 
   const existingRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(user.email)}&select=id`,
+    `${SUPABASE_URL}/rest/v1/users?id=eq.${userId}&select=id`,
     { headers }
   )
   const existing = await existingRes.json()
-  let userId: string
 
   if (existing && existing.length > 0) {
-    userId = existing[0].id
     await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ name, image, role }),
     })
   } else {
-    userId = randomUUID()
     await fetch(`${SUPABASE_URL}/rest/v1/users`, {
       method: 'POST',
       headers,
@@ -103,7 +96,7 @@ export async function GET(request: Request) {
     await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ id: randomUUID(), user_id: userId, language: 'uk', timezone: 'Europe/Kiev' }),
+      body: JSON.stringify({ user_id: userId, language: 'uk', timezone: 'Europe/Kiev' }),
     })
   }
 
@@ -111,12 +104,11 @@ export async function GET(request: Request) {
     method: 'POST',
     headers,
     body: JSON.stringify({
-      id: randomUUID(),
       user_id: userId,
       action: 'SIGN_IN',
       metadata: { provider: 'google' },
     }),
   })
 
-  return NextResponse.redirect(`${origin}${next}`)
+  return response
 }
