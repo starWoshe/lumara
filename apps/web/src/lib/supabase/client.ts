@@ -17,7 +17,8 @@ function setAllCookies(
     name: string
     value: string
     options?: any
-  }[]
+  }[],
+  headers?: Record<string, string>
 ) {
   cookiesToSet.forEach(({ name, value, options }) => {
     let str = `${name}=${value}`
