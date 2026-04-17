@@ -10,26 +10,12 @@ export type SessionUser = {
   role: string
 }
 
-// Отримує поточного користувача з Supabase Auth та синхронізує з таблицею users
 export async function getSessionUser(): Promise<SessionUser | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user?.email) return null
 
-  // Спробуємо знайти користувача в таблиці users (через Supabase REST API з RLS)
-  const { data: dbUser } = await supabase
-    .from('users')
-    .select('id, email, name, image, role')
-    .eq('id', user.id)
-    .single()
-
-  if (dbUser) {
-    return dbUser as SessionUser
-  }
-
-  // Якщо користувач є в Supabase Auth, але ще не в таблиці users — створюємо
-  const isAdmin = user.email === ADMIN_EMAIL
   const name =
     (user.user_metadata?.full_name as string | undefined)
     ?? (user.user_metadata?.name as string | undefined)
@@ -38,8 +24,28 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     (user.user_metadata?.avatar_url as string | undefined)
     ?? (user.user_metadata?.picture as string | undefined)
     ?? null
+  const isAdmin = user.email === ADMIN_EMAIL
   const role = isAdmin ? 'ADMIN' : 'USER'
 
+  // Шукаємо по Supabase Auth UUID
+  const { data: dbUser } = await supabase
+    .from('users')
+    .select('id, email, name, image, role')
+    .eq('id', user.id)
+    .single()
+
+  if (dbUser) return dbUser as SessionUser
+
+  // Fallback: шукаємо по email (якщо запис є зі старим UUID)
+  const { data: dbUserByEmail } = await supabase
+    .from('users')
+    .select('id, email, name, image, role')
+    .eq('email', user.email)
+    .single()
+
+  if (dbUserByEmail) return dbUserByEmail as SessionUser
+
+  // Створюємо новий запис
   const { data: newUser } = await supabase
     .from('users')
     .insert({ id: user.id, email: user.email, name, image, role })
@@ -58,12 +64,6 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     return newUser as SessionUser
   }
 
-  // Якщо insert заблокований RLS — повертаємо дані з Supabase Auth напряму
-  return {
-    id: user.id,
-    email: user.email,
-    name,
-    image,
-    role,
-  }
+  // Якщо все заблоковано RLS — повертаємо з Supabase Auth напряму
+  return { id: user.id, email: user.email, name, image, role }
 }

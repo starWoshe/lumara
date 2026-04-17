@@ -67,14 +67,16 @@ export async function GET(request: NextRequest) {
   const role = isAdmin ? 'ADMIN' : 'USER'
   const userId = user.id // завжди використовуємо Supabase Auth UUID
 
+  // Шукаємо по email — обробляємо старі записи з randomUUID
   const existingRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/users?id=eq.${userId}&select=id`,
+    `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(user.email)}&select=id`,
     { headers }
   )
   const existing = await existingRes.json()
 
   if (existing && existing.length > 0) {
-    await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
+    const existingId = existing[0].id
+    await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${existingId}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ name, image, role }),
