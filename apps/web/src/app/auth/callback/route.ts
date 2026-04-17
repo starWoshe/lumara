@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'woshem68@gmail.com'
@@ -14,8 +15,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`)
   }
 
-  // Створюємо redirect response одразу — куки ставимо прямо на нього
-  const response = NextResponse.redirect(`${origin}${next}`)
+  // Використовуємо cookies() від next/headers — єдиний правильний спосіб встановити кукі в Route Handler
+  const cookieStore = cookies()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,11 +24,11 @@ export async function GET(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          return cookieStore.getAll()
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
+            cookieStore.set(name, value, options)
           })
         },
       },
@@ -115,5 +116,5 @@ export async function GET(request: NextRequest) {
     console.error('[callback] DB sync error (non-critical):', err)
   }
 
-  return response
+  return NextResponse.redirect(`${origin}${next}`)
 }
