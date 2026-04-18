@@ -1,34 +1,19 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 
+// Ця сторінка більше не потрібна — exchange відбувається server-side в /auth/callback
+// Якщо хтось потрапив сюди, перенаправляємо на dashboard
 function ProcessingContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
 
   useEffect(() => {
-    const code = searchParams.get('code')
     const next = searchParams.get('next') ?? '/dashboard'
     const dest = next.startsWith('/') ? next : '/dashboard'
-
-    if (!code) {
-      window.location.replace('/login?error=missing_code')
-      return
-    }
-
-    const supabase = createClient()
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) {
-        console.error('[auth/processing]', error)
-        window.location.replace('/login?error=exchange_failed')
-      } else {
-        // window.location — hard navigation, гарантує що сервер отримає свіжі кукі
-        window.location.replace(dest)
-      }
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    router.replace(dest)
   }, [])
 
   return (
