@@ -423,6 +423,13 @@ export default function ChatPage() {
       </div>
 
 
+      {/* ── Плавний перехід до поля вводу ── */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none z-[1]"
+        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%)' }}
+        aria-hidden="true"
+      />
+
       {/* ── LUNA: додаткові зорі ── */}
       {agentType === 'LUNA' && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
