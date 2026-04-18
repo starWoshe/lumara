@@ -352,7 +352,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className={`flex flex-col flex-1 min-h-0 bg-gradient-to-b ${agent.bgColor} relative overflow-hidden`}>
+    <div className={`flex flex-col h-full bg-gradient-to-b ${agent.bgColor} relative overflow-hidden`}>
 
       {/* ── Кімната мага ── */}
       <Image
