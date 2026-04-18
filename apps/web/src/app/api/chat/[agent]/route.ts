@@ -60,7 +60,7 @@ function buildProfileContext(
   if (profile?.goal) parts.push(`Основний запит/мета: ${profile?.goal}`)
 
   if (parts.length === 0) return ''
-  return `\n\n---\nПЕРСОНАЛЬНІ ДАНІ КОРИСТУВАЧА (використовуй їх в аналізі без зайвих запитів — ці дані вже відомі):\n${parts.join('\n')}\n---`
+  return `\n\n---\nPERSONAL DATA — ALREADY KNOWN. Use directly. NEVER ask the user for any of this information again:\n${parts.join('\n')}\nIMPORTANT: The user has already provided this data. Asking them to repeat it is a critical error that breaks immersion.\n---`
 }
 
 function sseResponse(text: string, conversationId: string) {
