@@ -15,8 +15,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`)
   }
 
-  // Використовуємо cookies() від next/headers — єдиний правильний спосіб встановити кукі в Route Handler
+  // Vercel: x-forwarded-host містить реальний публічний домен
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const redirectBase = forwardedHost ? `https://${forwardedHost}` : origin
+
   const cookieStore = cookies()
+
+  // Збираємо всі кукі, які треба встановити — щоб потім явно додати їх на redirect response
+  const pendingCookies: Array<{ name: string; value: string; options: Record<string, unknown> }> = []
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,7 +34,10 @@ export async function GET(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options)
+            // 1) через next/headers (для server components)
+            try { cookieStore.set(name, value, options) } catch { /* server component */ }
+            // 2) явно на response (для redirect)
+            pendingCookies.push({ name, value, options })
           })
         },
       },
@@ -38,17 +47,17 @@ export async function GET(request: NextRequest) {
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
   if (exchangeError) {
     console.error('[callback] exchangeCodeForSession error:', exchangeError)
-    return NextResponse.redirect(`${origin}/login?error=exchange_failed`)
+    return NextResponse.redirect(`${redirectBase}/login?error=exchange_failed`)
   }
 
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user?.email) {
-    return NextResponse.redirect(`${origin}/login?error=user_not_found`)
+    return NextResponse.redirect(`${redirectBase}/login?error=user_not_found`)
   }
 
-  console.log('[callback] user:', user.email, user.id)
+  console.log('[callback] user:', user.email, 'pendingCookies:', pendingCookies.map(c => c.name))
 
-  // Синхронізація з таблицею users — не блокує сесію якщо БД недоступна
+  // Синхронізація з таблицею users — не блокує сесію
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -56,15 +65,12 @@ export async function GET(request: NextRequest) {
       Authorization: `Bearer ${SERVICE_KEY}`,
       Prefer: 'return=representation',
     }
-
     const name =
       (user.user_metadata?.full_name as string | undefined) ??
-      (user.user_metadata?.name as string | undefined) ??
-      null
+      (user.user_metadata?.name as string | undefined) ?? null
     const image =
       (user.user_metadata?.avatar_url as string | undefined) ??
-      (user.user_metadata?.picture as string | undefined) ??
-      null
+      (user.user_metadata?.picture as string | undefined) ?? null
     const isAdmin = user.email === ADMIN_EMAIL
     const role = isAdmin ? 'ADMIN' : 'USER'
     const userId = user.id
@@ -76,8 +82,7 @@ export async function GET(request: NextRequest) {
     const existing = await existingRes.json()
 
     if (Array.isArray(existing) && existing.length > 0) {
-      const existingId = existing[0].id
-      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${existingId}`, {
+      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${existing[0].id}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ name, image, role }),
@@ -102,19 +107,15 @@ export async function GET(request: NextRequest) {
         body: JSON.stringify({ user_id: userId, language: 'uk', timezone: 'Europe/Kiev' }),
       })
     }
-
-    await fetch(`${SUPABASE_URL}/rest/v1/activity_logs`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        user_id: userId,
-        action: 'SIGN_IN',
-        metadata: { provider: 'google' },
-      }),
-    })
   } catch (err) {
     console.error('[callback] DB sync error (non-critical):', err)
   }
 
-  return NextResponse.redirect(`${origin}${next}`)
+  // Redirect з явно встановленими кукі на response
+  const response = NextResponse.redirect(`${redirectBase}${next}`)
+  pendingCookies.forEach(({ name, value, options }) => {
+    response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2])
+  })
+
+  return response
 }
