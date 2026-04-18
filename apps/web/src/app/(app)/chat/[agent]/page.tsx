@@ -91,7 +91,7 @@ const agentInfo: Record<AgentType, {
     avatar: '/luna-avatar.png',
     avatarPos: 'object-top',
     room: '/luna-room.png',
-    roomPos: 'object-top md:object-[50%_28%]',
+    roomPos: 'object-top md:object-[50%_45%]',
     bgColor: 'from-blue-950 via-indigo-950 to-slate-950',
     accentColor: 'bg-blue-600/60',
     headerBg: 'bg-blue-950/80',
@@ -204,6 +204,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [conversationId, setConversationId] = useState<string | undefined>()
   const [hasInitiated, setHasInitiated] = useState(false)
+  const [roomLoaded, setRoomLoaded] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -360,9 +361,10 @@ export default function ChatPage() {
         alt=""
         fill
         sizes="100vw"
-        className={`object-cover ${agent.roomPos} pointer-events-none`}
-        style={{ opacity: agentType === 'UMBRA' ? 0.75 : 0.60 }}
+        className={`object-cover ${agent.roomPos} pointer-events-none transition-opacity duration-700`}
+        style={{ opacity: roomLoaded ? (agentType === 'UMBRA' ? 0.75 : 0.60) : 0 }}
         priority
+        onLoad={() => setRoomLoaded(true)}
       />
       {/* Накладка-градієнт поверх кімнати */}
       <div className={`absolute inset-0 bg-gradient-to-b ${agent.overlayColor} pointer-events-none`} />
