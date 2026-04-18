@@ -41,7 +41,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-dvh md:min-h-screen relative bg-[#060610] flex flex-col">
+    <div className="h-dvh md:h-screen overflow-hidden relative bg-[#060610] flex flex-col">
 
       {/* ── Фон — зоряне небо ── */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -168,7 +168,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* ── Основний контент ── */}
-      <main className="md:pl-60 flex-1 min-h-0 relative z-10 flex flex-col">
+      <main className="md:pl-60 flex-1 min-h-0 overflow-y-auto relative z-10 flex flex-col">
         {children}
       </main>
 
