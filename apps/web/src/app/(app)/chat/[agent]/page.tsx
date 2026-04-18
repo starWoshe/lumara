@@ -95,7 +95,7 @@ const agentInfo: Record<AgentType, {
     bgColor: 'from-blue-950 via-indigo-950 to-slate-950',
     accentColor: 'bg-blue-600/60',
     headerBg: 'bg-blue-950/80',
-    overlayColor: 'from-blue-950/55 via-indigo-950/35 to-slate-950/60',
+    overlayColor: 'from-blue-950/50 via-indigo-950/20 to-slate-950/25',
     candleColors: [
       'rgba(251,146,60,0.18)',
       'rgba(251,191,36,0.12)',
@@ -145,7 +145,7 @@ const agentInfo: Record<AgentType, {
     bgColor: 'from-amber-950 via-yellow-950 to-slate-950',
     accentColor: 'bg-amber-600/60',
     headerBg: 'bg-amber-950/80',
-    overlayColor: 'from-amber-950/55 via-yellow-950/35 to-slate-950/60',
+    overlayColor: 'from-amber-950/50 via-yellow-950/20 to-slate-950/25',
     candleColors: [
       'rgba(251,191,36,0.22)',
       'rgba(245,158,11,0.18)',
