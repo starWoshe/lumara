@@ -421,12 +421,6 @@ export default function ChatPage() {
         ))}
       </div>
 
-      {/* ── Туман знизу ── */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-0"
-        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)' }}
-        aria-hidden="true"
-      />
 
       {/* ── LUNA: додаткові зорі ── */}
       {agentType === 'LUNA' && (
