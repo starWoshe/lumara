@@ -140,16 +140,148 @@ export default async function DashboardPage() {
         })}
       </div>
 
-      {/* ── Підказка профілю ── */}
-      <Link
-        href="/profile"
-        className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/20 bg-amber-900/10 hover:bg-amber-900/20 transition-colors"
-      >
-        <span className="text-amber-400 text-lg flex-shrink-0 mt-0.5">💡</span>
-        <p className="text-amber-300/70 text-sm leading-relaxed">
-          Для точнішого астрологічного аналізу заповни дату, час та місце народження у профілі →
-        </p>
+      {/* ── CTA: заповни профіль ── */}
+      <Link href="/profile" className="profile-cta-btn group block relative rounded-2xl overflow-hidden">
+
+        {/* Анімований градієнтний бордер */}
+        <div className="profile-cta-border absolute inset-0 rounded-2xl pointer-events-none" />
+
+        {/* Шиммер-смуга */}
+        <div className="profile-cta-shimmer absolute inset-0 pointer-events-none rounded-2xl" />
+
+        {/* Зоряні частинки */}
+        <span className="profile-cta-star" style={{ left: '8%',  top: '25%', animationDelay: '0s' }}>✦</span>
+        <span className="profile-cta-star" style={{ left: '20%', top: '70%', animationDelay: '0.7s' }}>✧</span>
+        <span className="profile-cta-star" style={{ left: '78%', top: '20%', animationDelay: '1.3s' }}>✦</span>
+        <span className="profile-cta-star" style={{ left: '90%', top: '65%', animationDelay: '0.4s' }}>✧</span>
+        <span className="profile-cta-star" style={{ left: '52%', top: '80%', animationDelay: '1.8s' }}>✦</span>
+        <span className="profile-cta-star" style={{ left: '35%', top: '15%', animationDelay: '0.9s' }}>✧</span>
+
+        {/* Контент */}
+        <div className="relative z-10 flex items-center gap-4 px-5 py-4 sm:py-5">
+          {/* Іконка */}
+          <div className="profile-cta-icon flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-xl">
+            🔮
+          </div>
+
+          {/* Текст */}
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-white text-sm sm:text-base leading-snug">
+              Активуй точний астральний аналіз
+            </p>
+            <p className="text-white/45 text-xs sm:text-sm mt-0.5 leading-relaxed">
+              Заповни дату, час і місце народження — маги говоритимуть саме до тебе
+            </p>
+          </div>
+
+          {/* Стрілка */}
+          <div className="profile-cta-arrow flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
+            →
+          </div>
+        </div>
       </Link>
+
+      <style>{`
+        /* ── Пульсуюче свічення навколо кнопки ── */
+        .profile-cta-btn {
+          background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.10) 40%, rgba(245,158,11,0.08) 100%);
+          animation: cta-pulse-glow 4s ease-in-out infinite;
+        }
+        @keyframes cta-pulse-glow {
+          0%, 100% { box-shadow: 0 0 20px rgba(99,102,241,0.15), 0 0 40px rgba(99,102,241,0.05); }
+          50%       { box-shadow: 0 0 35px rgba(139,92,246,0.30), 0 0 70px rgba(139,92,246,0.10), 0 0 100px rgba(245,158,11,0.06); }
+        }
+
+        /* ── Градієнтний бордер, що обертається ── */
+        .profile-cta-border {
+          background: conic-gradient(
+            from var(--border-angle, 0deg),
+            rgba(99,102,241,0.7) 0%,
+            rgba(167,139,250,0.5) 20%,
+            rgba(245,158,11,0.6) 40%,
+            rgba(99,102,241,0.2) 60%,
+            rgba(139,92,246,0.6) 80%,
+            rgba(99,102,241,0.7) 100%
+          );
+          padding: 1px;
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          animation: border-spin 6s linear infinite;
+        }
+        @property --border-angle {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
+        }
+        @keyframes border-spin {
+          to { --border-angle: 360deg; }
+        }
+
+        /* ── Шиммер-смуга ── */
+        .profile-cta-shimmer {
+          background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.06) 50%, transparent 70%);
+          background-size: 200% 100%;
+          animation: cta-shimmer 3.5s ease-in-out infinite;
+        }
+        @keyframes cta-shimmer {
+          0%   { background-position: -100% 0; }
+          60%  { background-position: 200% 0; }
+          100% { background-position: 200% 0; }
+        }
+
+        /* ── Зоряні частинки ── */
+        .profile-cta-star {
+          position: absolute;
+          font-size: 10px;
+          color: rgba(167,139,250,0.7);
+          animation: cta-star-twinkle ease-in-out infinite;
+          pointer-events: none;
+        }
+        @keyframes cta-star-twinkle {
+          0%, 100% { opacity: 0.1; transform: scale(0.7); }
+          50%       { opacity: 0.9; transform: scale(1.4); color: rgba(245,158,11,0.9); }
+        }
+        .profile-cta-star { animation-duration: 2.5s; }
+        .profile-cta-star:nth-child(3) { animation-duration: 3.1s; }
+        .profile-cta-star:nth-child(4) { animation-duration: 2.2s; }
+        .profile-cta-star:nth-child(5) { animation-duration: 3.5s; }
+        .profile-cta-star:nth-child(6) { animation-duration: 2.8s; }
+        .profile-cta-star:nth-child(7) { animation-duration: 1.9s; }
+        .profile-cta-star:nth-child(8) { animation-duration: 3.2s; }
+
+        /* ── Іконка ── */
+        .profile-cta-icon {
+          background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.20));
+          border: 1px solid rgba(139,92,246,0.35);
+          box-shadow: 0 0 12px rgba(99,102,241,0.20);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .profile-cta-btn:hover .profile-cta-icon {
+          transform: scale(1.1) rotate(-6deg);
+          box-shadow: 0 0 20px rgba(99,102,241,0.40);
+        }
+
+        /* ── Стрілка ── */
+        .profile-cta-arrow {
+          color: rgba(167,139,250,0.7);
+          background: rgba(99,102,241,0.12);
+          border: 1px solid rgba(139,92,246,0.25);
+          font-size: 14px;
+          transition: transform 0.3s ease, color 0.3s ease, background 0.3s ease;
+        }
+        .profile-cta-btn:hover .profile-cta-arrow {
+          transform: translateX(4px);
+          color: rgba(245,158,11,0.9);
+          background: rgba(245,158,11,0.12);
+          border-color: rgba(245,158,11,0.35);
+        }
+
+        /* ── Hover-підсвічення фону ── */
+        .profile-cta-btn:hover {
+          background: linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(139,92,246,0.14) 40%, rgba(245,158,11,0.10) 100%);
+        }
+      `}</style>
     </div>
     </div>
   )
