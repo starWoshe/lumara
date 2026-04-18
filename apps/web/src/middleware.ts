@@ -1,36 +1,38 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-// Middleware для захисту роутів та оновлення Supabase сесії
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request)
 
   const path = request.nextUrl.pathname
-  const allCookies = request.cookies.getAll().map(c => c.name)
-  console.log('[middleware]', path, { user: !!user, cookies: allCookies })
 
-  // Публічні маршрути — доступні без входу
-  const publicPaths = ['/', '/login', '/pricing', '/api/auth', '/api/stripe/webhook', '/api/debug', '/api/debug-cookie', '/auth/callback']
+  const publicPaths = [
+    '/', '/login', '/pricing', '/mages',
+    '/api/auth', '/api/stripe/webhook', '/api/debug', '/api/debug-cookie', '/auth/callback',
+  ]
   const isPublic = publicPaths.some((p) => path === p || path.startsWith(p + '/'))
 
-  // Якщо авторизований і йде на /login — редиректимо на dashboard
+  // Авторизований → не пускаємо на /login
   if (path === '/login' && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const redirect = NextResponse.redirect(new URL('/dashboard', request.url))
+    // Копіюємо кукі з supabaseResponse в redirect response
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value))
+    return redirect
   }
 
-  // Решта — тільки для авторизованих
+  // Захищений маршрут без сесії → на /login
   if (!isPublic && !user) {
     if (path.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    console.log('[middleware] redirecting to /login', path)
-    return NextResponse.redirect(new URL('/login', request.url))
+    const redirect = NextResponse.redirect(new URL('/login', request.url))
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value))
+    return redirect
   }
 
   return response
 }
 
-// Застосовуємо middleware до всіх маршрутів крім статичних файлів
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.png|.*\\.svg|.*\\.jpg|.*\\.mp4|.*\\.webm|.*\\.ico).*)'],
 }

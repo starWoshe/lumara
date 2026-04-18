@@ -9,19 +9,20 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const nextParam = searchParams.get('next') ?? '/dashboard'
+  // Безпека: тільки відносні шляхи
+  const next = nextParam.startsWith('/') ? nextParam : '/dashboard'
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`)
   }
 
-  // Vercel: x-forwarded-host містить реальний публічний домен
-  const forwardedHost = request.headers.get('x-forwarded-host')
+  // Vercel: x-forwarded-host містить реальний публічний домен (lumara.fyi)
+  const rawHost = request.headers.get('x-forwarded-host')
+  const forwardedHost = rawHost ? rawHost.split(',')[0].trim() : null
   const redirectBase = forwardedHost ? `https://${forwardedHost}` : origin
 
   const cookieStore = cookies()
-
-  // Збираємо всі кукі, які треба встановити — щоб потім явно додати їх на redirect response
   const pendingCookies: Array<{ name: string; value: string; options: Record<string, unknown> }> = []
 
   const supabase = createServerClient(
@@ -34,9 +35,7 @@ export async function GET(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            // 1) через next/headers (для server components)
-            try { cookieStore.set(name, value, options) } catch { /* server component */ }
-            // 2) явно на response (для redirect)
+            try { cookieStore.set(name, value, options) } catch { /* server component context */ }
             pendingCookies.push({ name, value, options })
           })
         },
@@ -55,9 +54,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${redirectBase}/login?error=user_not_found`)
   }
 
-  console.log('[callback] user:', user.email, 'pendingCookies:', pendingCookies.map(c => c.name))
+  console.log('[callback] user:', user.email, 'cookies to set:', pendingCookies.map(c => c.name))
 
-  // Синхронізація з таблицею users — не блокує сесію
+  // DB sync (некритичне — не блокує сесію)
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -71,8 +70,7 @@ export async function GET(request: NextRequest) {
     const image =
       (user.user_metadata?.avatar_url as string | undefined) ??
       (user.user_metadata?.picture as string | undefined) ?? null
-    const isAdmin = user.email === ADMIN_EMAIL
-    const role = isAdmin ? 'ADMIN' : 'USER'
+    const role = user.email === ADMIN_EMAIL ? 'ADMIN' : 'USER'
     const userId = user.id
 
     const existingRes = await fetch(
@@ -83,27 +81,22 @@ export async function GET(request: NextRequest) {
 
     if (Array.isArray(existing) && existing.length > 0) {
       await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${existing[0].id}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ name, image, role }),
+        method: 'PATCH', headers, body: JSON.stringify({ name, image, role }),
       })
     } else {
       await fetch(`${SUPABASE_URL}/rest/v1/users`, {
-        method: 'POST',
-        headers,
+        method: 'POST', headers,
         body: JSON.stringify({ id: userId, email: user.email, name, image, role }),
       })
     }
 
     const profilesRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=id`,
-      { headers }
+      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=id`, { headers }
     )
     const profiles = await profilesRes.json()
     if (!Array.isArray(profiles) || profiles.length === 0) {
       await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
-        method: 'POST',
-        headers,
+        method: 'POST', headers,
         body: JSON.stringify({ user_id: userId, language: 'uk', timezone: 'Europe/Kiev' }),
       })
     }
@@ -111,10 +104,28 @@ export async function GET(request: NextRequest) {
     console.error('[callback] DB sync error (non-critical):', err)
   }
 
-  // Redirect з явно встановленими кукі на response
-  const response = NextResponse.redirect(`${redirectBase}${next}`)
+  const destination = `${redirectBase}${next}`
+
+  // КЛЮЧОВИЙ ФІХ: повертаємо 200 HTML з JS-редиректом замість 302.
+  // Vercel Edge / деякі браузери стрипують Set-Cookie з 302 redirect response.
+  // З 200 OK браузер СПОЧАТКУ зберігає Set-Cookie, ПОТІМ виконує JS redirect.
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<script>window.location.replace(${JSON.stringify(destination)})</script>
+</head><body></body></html>`
+
+  const response = new NextResponse(html, {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  })
+
   pendingCookies.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2])
+    response.cookies.set(name, value, {
+      ...(options as object),
+      path: (options as Record<string, unknown>).path as string ?? '/',
+      sameSite: ((options as Record<string, unknown>).sameSite as 'lax' | 'strict' | 'none') ?? 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: (options as Record<string, unknown>).httpOnly !== false,
+    })
   })
 
   return response
