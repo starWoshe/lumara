@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="uk" className={`${inter.variable} ${playfair.variable}`}>
-      <body className="lumara-gradient min-h-screen">
+      <body className="lumara-gradient min-h-dvh">
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

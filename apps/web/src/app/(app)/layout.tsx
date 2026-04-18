@@ -41,7 +41,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen relative bg-[#060610]">
+    <div className="min-h-dvh md:min-h-screen relative bg-[#060610]">
 
       {/* ── Фон — зоряне небо ── */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -94,7 +94,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* ── Бокова навігація ── */}
-      <aside className="fixed left-0 top-0 h-full w-60 border-r border-white/5 bg-black/30 backdrop-blur-xl z-40 hidden md:flex flex-col">
+      <aside className="fixed left-0 top-0 h-dvh md:h-screen w-60 border-r border-white/5 bg-black/30 backdrop-blur-xl z-40 hidden md:flex flex-col">
         {/* Логотип */}
         <div className="p-5 border-b border-white/5 flex items-center gap-3">
           <Image src="/lumara-logo.png" alt="LUMARA" width={34} height={34} className="rounded-full flex-shrink-0" />
