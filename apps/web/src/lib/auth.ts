@@ -13,9 +13,7 @@ export type SessionUser = {
 
 export async function getSessionUser(): Promise<SessionUser | null> {
   const supabase = await createClient()
-  // getSession читає з кукі без мережевого запиту — надійніше для server components
-  const { data: { session } } = await supabase.auth.getSession()
-  const user = session?.user ?? null
+  const { data: { user } } = await supabase.auth.getUser()
 
   if (!user?.email) return null
 

@@ -1,8 +1,29 @@
+import { createServerClient } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
-  const { response, user } = await updateSession(request)
+  let supabaseResponse = NextResponse.next({ request })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
 
@@ -12,25 +33,30 @@ export async function middleware(request: NextRequest) {
   ]
   const isPublic = publicPaths.some((p) => path === p || path.startsWith(p + '/'))
 
-  // Авторизований → не пускаємо на /login
   if (path === '/login' && user) {
-    const redirect = NextResponse.redirect(new URL('/dashboard', request.url))
-    // Копіюємо кукі з supabaseResponse в redirect response
-    response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value))
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/dashboard'
+    const redirect = NextResponse.redirect(redirectUrl)
+    supabaseResponse.cookies.getAll().forEach((c) =>
+      redirect.cookies.set(c.name, c.value, { path: c.path })
+    )
     return redirect
   }
 
-  // Захищений маршрут без сесії → на /login
   if (!isPublic && !user) {
     if (path.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const redirect = NextResponse.redirect(new URL('/login', request.url))
-    response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value))
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/login'
+    const redirect = NextResponse.redirect(redirectUrl)
+    supabaseResponse.cookies.getAll().forEach((c) =>
+      redirect.cookies.set(c.name, c.value, { path: c.path })
+    )
     return redirect
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {
