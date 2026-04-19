@@ -18,6 +18,16 @@ type User = {
   _count: { conversations: number }
 }
 
+type AgentStats = {
+  conversationsByAgent: Record<string, number>
+  funnel: {
+    registered: number
+    activated: number
+    monetizationTrigger: number
+    converted: number
+  }
+}
+
 type ActivityLog = {
   id: string
   action: string
@@ -61,6 +71,7 @@ export default function AdminPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
+  const [agentStats, setAgentStats] = useState<AgentStats | null>(null)
 
   // Захист — тільки ADMIN (через useEffect щоб не порушувати Rules of Hooks)
   useEffect(() => {
@@ -73,14 +84,17 @@ export default function AdminPage() {
     if (status !== 'authenticated' || session?.role !== 'ADMIN') return
     async function load() {
       setLoading(true)
-      const [usersRes, logsRes] = await Promise.all([
+      const [usersRes, logsRes, statsRes] = await Promise.all([
         fetch('/api/admin/users'),
         fetch(`/api/admin/activity${selectedUser ? `?userId=${selectedUser}` : ''}`),
+        fetch('/api/admin/stats'),
       ])
       const usersData = await usersRes.json()
       const logsData = await logsRes.json()
+      const statsData = await statsRes.json()
       setUsers(usersData.users ?? [])
       setLogs(logsData.logs ?? [])
+      setAgentStats(statsData ?? null)
       setLoading(false)
     }
     load()
@@ -99,7 +113,7 @@ export default function AdminPage() {
       </div>
 
       {/* Статистика */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <StatCard label="Всього юзерів" value={users.length} icon="👥" />
         <StatCard
           label="Активні підписки"
@@ -117,6 +131,36 @@ export default function AdminPage() {
           icon="🌱"
         />
       </div>
+
+      {/* Розбивка по магах */}
+      {agentStats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          {(['LUNA', 'ARCAS', 'NUMI', 'UMBRA'] as const).map((mage) => {
+            const icons: Record<string, string> = { LUNA: '🌙', ARCAS: '🃏', NUMI: '🔢', UMBRA: '🧠' }
+            return (
+              <StatCard
+                key={mage}
+                label={`${mage} — розмов`}
+                value={agentStats.conversationsByAgent[mage] ?? 0}
+                icon={icons[mage]}
+              />
+            )
+          })}
+        </div>
+      )}
+
+      {/* Воронка */}
+      {agentStats && (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8">
+          <h2 className="text-white/60 text-xs uppercase tracking-widest mb-4">Воронка</h2>
+          <div className="flex flex-col gap-2">
+            <FunnelRow label="Реєстрація" value={agentStats.funnel.registered} max={agentStats.funnel.registered} color="bg-blue-500" />
+            <FunnelRow label="Активація (почав чат)" value={agentStats.funnel.activated} max={agentStats.funnel.registered} color="bg-indigo-500" />
+            <FunnelRow label="Тригер монетизації (≥12 повідомлень)" value={agentStats.funnel.monetizationTrigger} max={agentStats.funnel.registered} color="bg-purple-500" />
+            <FunnelRow label="Конверсія (платна підписка)" value={agentStats.funnel.converted} max={agentStats.funnel.registered} color="bg-green-500" />
+          </div>
+        </div>
+      )}
 
       {/* Таби */}
       <div className="flex gap-2 mb-6">
@@ -306,6 +350,21 @@ function UsersTable({ users, onSelectUser }: {
           })}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+function FunnelRow({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-48 text-white/50 text-xs shrink-0">{label}</div>
+      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+        <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="text-white/70 text-xs w-20 text-right shrink-0">
+        {value} <span className="text-white/30">({pct}%)</span>
+      </div>
     </div>
   )
 }

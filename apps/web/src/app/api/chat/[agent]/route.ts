@@ -127,6 +127,9 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
           content: firstMessage,
         },
       })
+      db.activityLog.create({
+        data: { userId, action: 'CHAT_STARTED', metadata: { agent: agentType } },
+      }).catch(() => {})
       return sseResponse(firstMessage, conversation.id)
     }
 
@@ -201,6 +204,9 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
         content,
       },
     })
+    db.activityLog.create({
+      data: { userId, action: 'MESSAGE_SENT', metadata: { agent: agentType, conversationId: conversation.id } },
+    }).catch(() => {})
 
     const profile = await db.profile.findUnique({ where: { userId } })
     const profileContext = buildProfileContext(profile as Record<string, unknown> | null, session.name)

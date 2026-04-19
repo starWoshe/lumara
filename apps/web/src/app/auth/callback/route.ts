@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@lumara/database'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -51,6 +52,18 @@ export async function GET(request: NextRequest) {
   }
 
   console.log('[auth/callback] exchange SUCCESS, user:', data.session?.user?.email)
+
+  // Логуємо вхід у систему
+  const supabaseUserId = data.session?.user?.id
+  if (supabaseUserId) {
+    db.user.findUnique({ where: { id: supabaseUserId } }).then((user) => {
+      if (user) {
+        db.activityLog.create({
+          data: { userId: user.id, action: 'SIGN_IN' },
+        }).catch(() => {})
+      }
+    }).catch(() => {})
+  }
 
   return NextResponse.redirect(`${origin}${next}`)
 }
