@@ -138,7 +138,7 @@ function LoginForm() {
           </p>
 
           {/* Вкладки */}
-          <div className="flex w-full mb-6 rounded-xl overflow-hidden border border-white/10">
+          <div className="flex w-full mb-3 rounded-xl overflow-hidden border border-white/10">
             <button
               onClick={() => setTab('google')}
               className={`flex-1 py-2.5 text-sm font-medium transition-all ${tab === 'google' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'}`}
@@ -149,9 +149,16 @@ function LoginForm() {
               onClick={() => setTab('magic')}
               className={`flex-1 py-2.5 text-sm font-medium transition-all ${tab === 'magic' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'}`}
             >
-              Magic Link
+              Вхід по email
             </button>
           </div>
+
+          {/* Підказка під вкладками */}
+          <p className="text-white/25 text-xs text-center mb-5 leading-relaxed">
+            {tab === 'google'
+              ? 'Увійди через Google — акаунт створюється автоматично'
+              : 'Надішлемо посилання для входу — без пароля, одним кліком'}
+          </p>
 
           {tab === 'google' ? (
             /* Кнопка Google */

@@ -36,14 +36,18 @@ export async function middleware(request: NextRequest) {
   const isPublic = publicPaths.some((p) => path === p || path.startsWith(p + '/'))
 
   if (path === '/login' && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const callbackUrl = request.nextUrl.searchParams.get('callbackUrl')
+    const dest = callbackUrl?.startsWith('/') ? callbackUrl : '/chat/luna'
+    return NextResponse.redirect(new URL(dest, request.url))
   }
 
   if (!isPublic && !user) {
     if (path.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    return NextResponse.redirect(new URL('/login', request.url))
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('callbackUrl', path)
+    return NextResponse.redirect(loginUrl)
   }
 
   return supabaseResponse
