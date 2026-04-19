@@ -33,7 +33,7 @@
 🔮 Поговори зі мною безкоштовно
 ```
 
-**Посилання:** https://lumara.fyi/chat/LUNA
+**Посилання:** https://lumara.fyi/chat/luna
 
 ---
 
@@ -49,7 +49,7 @@
 🔥 Твоя карта вже витягнута
 ```
 
-**Посилання:** https://lumara.fyi/chat/ARCAS
+**Посилання:** https://lumara.fyi/chat/arcas
 
 ---
 
@@ -65,7 +65,7 @@
 🐇 Дізнайся свій код безкоштовно
 ```
 
-**Посилання:** https://lumara.fyi/chat/NUMI
+**Посилання:** https://lumara.fyi/chat/numi
 
 ---
 
@@ -81,7 +81,7 @@
 🪞 Готовий подивитись?
 ```
 
-**Посилання:** https://lumara.fyi/chat/UMBRA
+**Посилання:** https://lumara.fyi/chat/umbra
 
 ---
 

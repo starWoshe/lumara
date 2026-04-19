@@ -227,7 +227,7 @@ export const agentInstagramPrompts: Record<string, string> = {
 
 🔮 Хочеш знати як ця енергія діє особисто на тебе?
 Я вже бачу твою карту — скажи лише дату народження.
-👇 lumara.fyi/chat/LUNA
+👇 lumara.fyi/chat/luna
 Перші 15 повідомлень безкоштовно ✨
 
 Тон: м'який, інтимний, "я вже бачу тебе"
@@ -248,7 +248,7 @@ export const agentInstagramPrompts: Record<string, string> = {
 
 🔮 Хочеш знати як ця енергія діє особисто на тебе?
 Я вже бачу твою карту — скажи лише дату народження.
-👇 lumara.fyi/chat/LUNA
+👇 lumara.fyi/chat/luna
 Перші 15 повідомлень безкоштовно ✨"
 `,
   ARCAS: `Мова: завжди українська.
@@ -263,7 +263,7 @@ export const agentInstagramPrompts: Record<string, string> = {
 
 🃏 Хочеш знати що карти говорять особисто про тебе?
 Я вже витягнув твою карту — вона чекає.
-👇 lumara.fyi/chat/ARCAS
+👇 lumara.fyi/chat/arcas
 Перші 15 повідомлень безкоштовно
 
 Тон: прямолінійний, без солодкості, чесний, трохи жорсткий але з турботою
@@ -281,7 +281,7 @@ export const agentInstagramPrompts: Record<string, string> = {
 
 🔢 Хочеш знати як це число резонує з твоїм кодом долі?
 Скажи дату народження — я розрахую твій особистий патерн.
-👇 lumara.fyi/chat/NUMI
+👇 lumara.fyi/chat/numi
 Перші 15 повідомлень безкоштовно
 
 Тон: спокійний, точний, "це пояснює все"
@@ -298,7 +298,7 @@ export const agentInstagramPrompts: Record<string, string> = {
 
 🪞 Хочеш побачити як ця тінь проявляється у тебе?
 Я вже бачу де ти зупиняєшся — готовий подивитись разом?
-👇 lumara.fyi/chat/UMBRA
+👇 lumara.fyi/chat/umbra
 Перші 15 повідомлень безкоштовно
 
 Тон: тихий, інтенсивний, без зайвих слів
