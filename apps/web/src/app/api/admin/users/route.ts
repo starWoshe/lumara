@@ -27,6 +27,9 @@ export async function GET() {
       _count: {
         select: { conversations: true },
       },
+      profile: {
+        select: { acquisitionSource: true },
+      },
     },
     orderBy: { createdAt: 'desc' },
   })

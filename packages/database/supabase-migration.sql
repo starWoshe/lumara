@@ -267,3 +267,6 @@ WHERE NOT EXISTS (SELECT 1 FROM "agents" WHERE "type" = 'NUMI');
 INSERT INTO "agents" ("type", "name", "description", "model", "prompt_file", "token_limit", "updated_at")
 SELECT 'UMBRA', 'UMBRA', 'Езо-психолог', 'GPT4', 'umbra.ts', 3000, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM "agents" WHERE "type" = 'UMBRA');
+
+-- Додаткові колонки (IF NOT EXISTS — безпечно запускати повторно)
+ALTER TABLE "profiles" ADD COLUMN IF NOT EXISTS "acquisition_source" TEXT;

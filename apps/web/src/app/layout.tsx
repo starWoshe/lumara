@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import { Suspense } from 'react'
 import { Inter, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { SessionProvider } from '@/components/providers/SessionProvider'
+import { UtmCapture } from '@/components/UtmCapture'
 import './globals.css'
 
 const inter = Inter({
@@ -53,6 +55,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="uk" className={`${inter.variable} ${playfair.variable}`}>
       <body className="lumara-gradient min-h-dvh">
         <SessionProvider>{children}</SessionProvider>
+        <Suspense><UtmCapture /></Suspense>
         <Analytics />
       </body>
     </html>

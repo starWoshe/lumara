@@ -16,6 +16,7 @@ type User = {
   createdAt: string
   subscriptions: { plan: string; status: string }[]
   _count: { conversations: number }
+  profile: { acquisitionSource: string | null } | null
 }
 
 type AgentStats = {
@@ -285,6 +286,7 @@ function UsersTable({ users, onSelectUser }: {
             <th className="text-left p-4">Користувач</th>
             <th className="text-left p-4 hidden md:table-cell">Роль / План</th>
             <th className="text-left p-4 hidden lg:table-cell">Розмов</th>
+            <th className="text-left p-4 hidden xl:table-cell">Джерело</th>
             <th className="text-right p-4 hidden md:table-cell">Зареєстрований</th>
             <th className="p-4" />
           </tr>
@@ -333,6 +335,9 @@ function UsersTable({ users, onSelectUser }: {
                 </td>
                 <td className="p-4 hidden lg:table-cell text-white/40 text-xs">
                   {user._count.conversations} розмов
+                </td>
+                <td className="p-4 hidden xl:table-cell text-white/30 text-xs">
+                  {user.profile?.acquisitionSource ?? '—'}
                 </td>
                 <td className="p-4 text-right text-white/30 text-xs hidden md:table-cell whitespace-nowrap">
                   {formatDate(user.createdAt)}

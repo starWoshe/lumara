@@ -126,7 +126,8 @@ model Profile {
   birthDate   DateTime? @map("birth_date")
   birthTime   String?   @map("birth_time")
   birthPlace  String?   @map("birth_place")
-  goal        String?
+  goal              String?
+  acquisitionSource String?   @map("acquisition_source")
   language    String    @default("uk")
   timezone    String    @default("Europe/Kiev")
   tenantId    String?   @map("tenant_id")

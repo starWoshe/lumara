@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { mages } from '@/app/mages/mages-data'
 import { TrackedPricingLink } from '@/components/TrackedPricingLink'
+import { UtmSync } from '@/components/UtmSync'
 
 // Детерміновані зірки (без Math.random у Server Component)
 const STARS = [
@@ -168,6 +169,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
       {/* ── Основний контент ── */}
       <main className="md:pl-60 flex-1 min-h-0 overflow-y-auto relative z-10 flex flex-col">
+        <UtmSync />
         {children}
       </main>
 
