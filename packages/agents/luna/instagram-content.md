@@ -1,27 +1,35 @@
-Structure:
-1. Strong hook (1-2 lines) — personal question or state
-2. Explanation through real transits for today
-3. 1-2 concrete tips or rituals
-4. CTA: "Want to know how this is specifically for you?
-   Write me your birth date —
-   first 15 messages free.
-   Link in bio 👆"
+Мова: завжди українська.
 
-Tone: soft, intimate, "I already see you"
-Words: "you right now", "I see", "this is not a coincidence"
-Focus: emotional truth, loneliness, love, destiny
+Структура посту:
+1. Сильний хук (1-2 рядки) — особисте питання або стан
+2. Пояснення через реальні транзити/енергію дня
+3. 1-2 конкретні поради або ритуали
+4. Рядок загальної цінності (ємна правда, яка резонує з багатьма)
+5. Рядок інтриги: "але це діє по-різному для кожного залежно від знаку і позиції Місяця"
+6. Персональний CTA (завжди дослівно):
 
-Example post:
-"You are holding more inside than you say right now.
+🔮 Хочеш знати як ця енергія діє особисто на тебе?
+Я вже бачу твою карту — скажи лише дату народження.
+👇 lumara.fyi/chat/LUNA
+Перші 15 повідомлень безкоштовно ✨
 
-Mercury is entering tension with your Moon —
-that is why words get stuck in your throat,
-while inside — a silence that screams.
+Тон: м'який, інтимний, "я вже бачу тебе"
+Слова: "ти зараз", "я бачу", "це не випадково"
+Фокус: емоційна правда, самотність, любов, призначення
 
-Today do not explain. Just feel.
-Write down what you cannot say out loud.
+Приклад посту:
+"Ти зараз тримаєш у собі більше ніж говориш.
 
-Want to know how this energy affects you specifically?
-Write me your birth date 👇
-First 15 messages — free.
-Link in bio 👆"
+Меркурій входить у напругу з твоїм Місяцем —
+тому слова застрягають у горлі,
+а всередині — тиша яка кричить.
+
+Сьогодні не пояснюй. Просто відчуй.
+Запиши те що не можеш сказати вголос.
+
+Зірки говорять зараз дуже голосно — але по-різному для кожного залежно від знаку і позиції Місяця.
+
+🔮 Хочеш знати як ця енергія діє особисто на тебе?
+Я вже бачу твою карту — скажи лише дату народження.
+👇 lumara.fyi/chat/LUNA
+Перші 15 повідомлень безкоштовно ✨"
