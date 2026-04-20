@@ -164,12 +164,13 @@ model Agent {
   description String?
   model       AIModel   @default(CLAUDE_SONNET_4_6)
   promptFile  String    @map("prompt_file")
-  isActive    Boolean   @default(true) @map("is_active")
-  tokenLimit  Int       @default(4000) @map("token_limit")
-  tenantId    String?   @map("tenant_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
+  isActive     Boolean   @default(true) @map("is_active")
+  tokenLimit   Int       @default(4000) @map("token_limit")
+  blockedUntil DateTime? @map("blocked_until")
+  tenantId     String?   @map("tenant_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
 
   conversations Conversation[]
 
@@ -332,4 +333,30 @@ model ContentQueue {
   deletedAt   DateTime?       @map("deleted_at")
 
   @@map("content_queue")
+}
+
+model TokenUsage {
+  id           String    @id @default(uuid())
+  userId       String?   @map("user_id")
+  agent        AgentType
+  actionType   String    @default("chat") @map("action_type")
+  model        String
+  tokensInput  Int       @map("tokens_input")
+  tokensOutput Int       @map("tokens_output")
+  tokensTotal  Int       @map("tokens_total")
+  costUsd      Float     @map("cost_usd")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([agent])
+  @@index([createdAt])
+  @@index([userId])
+  @@map("token_usage")
+}
+
+model AdminSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("admin_settings")
 }

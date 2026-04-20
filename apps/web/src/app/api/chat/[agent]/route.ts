@@ -12,6 +12,8 @@ import {
 } from '@lumara/agents'
 import { sendMessageSchema } from '@lumara/shared'
 import { FREE_MESSAGES_LIMIT, PLANS } from '@/lib/stripe'
+import { calcCostUsd } from '@/lib/token-costs'
+import { checkTokenAlerts } from '@/lib/token-alerts'
 
 export const maxDuration = 60
 
@@ -107,6 +109,15 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
     const agent = await db.agent.findUnique({ where: { type: agentType } })
     if (!agent) {
       return NextResponse.json({ error: 'Агент не знайдено' }, { status: 404 })
+    }
+
+    // Перевірка блокування (червоний алерт)
+    if (agent.blockedUntil && agent.blockedUntil > new Date()) {
+      const minutesLeft = Math.ceil((agent.blockedUntil.getTime() - Date.now()) / 60_000)
+      return NextResponse.json(
+        { error: 'AGENT_BLOCKED', message: `Агент тимчасово призупинений. Спробуй через ${minutesLeft} хв.` },
+        { status: 503 }
+      )
     }
 
     // --- Initiate flow: mage speaks first ---
@@ -253,6 +264,22 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
         .filter((b) => b.type === 'text')
         .map((b) => (b as { type: 'text'; text: string }).text)
         .join('')
+
+      // Логуємо витрати токенів + перевірка алертів (async, не блокуємо відповідь)
+      const tokIn = response.usage.input_tokens
+      const tokOut = response.usage.output_tokens
+      db.tokenUsage.create({
+        data: {
+          userId,
+          agent: agentType,
+          actionType: 'chat',
+          model: aiModel,
+          tokensInput: tokIn,
+          tokensOutput: tokOut,
+          tokensTotal: tokIn + tokOut,
+          costUsd: calcCostUsd(aiModel, tokIn, tokOut),
+        },
+      }).then(() => checkTokenAlerts(agentType)).catch(() => {})
     } catch (apiErr) {
       const isOverloaded =
         apiErr instanceof Anthropic.APIError && (apiErr.status === 529 || apiErr.status === 503)

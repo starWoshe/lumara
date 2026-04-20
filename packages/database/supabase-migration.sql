@@ -270,3 +270,37 @@ WHERE NOT EXISTS (SELECT 1 FROM "agents" WHERE "type" = 'UMBRA');
 
 -- Додаткові колонки (IF NOT EXISTS — безпечно запускати повторно)
 ALTER TABLE "profiles" ADD COLUMN IF NOT EXISTS "acquisition_source" TEXT;
+ALTER TABLE "agents" ADD COLUMN IF NOT EXISTS "blocked_until" TIMESTAMP(3);
+
+-- token_usage
+CREATE TABLE IF NOT EXISTS "token_usage" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" UUID,
+    "agent" "AgentType" NOT NULL,
+    "action_type" TEXT NOT NULL DEFAULT 'chat',
+    "model" TEXT NOT NULL,
+    "tokens_input" INTEGER NOT NULL,
+    "tokens_output" INTEGER NOT NULL,
+    "tokens_total" INTEGER NOT NULL,
+    "cost_usd" DOUBLE PRECISION NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "token_usage_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "token_usage_agent_idx" ON "token_usage"("agent");
+CREATE INDEX IF NOT EXISTS "token_usage_created_at_idx" ON "token_usage"("created_at");
+CREATE INDEX IF NOT EXISTS "token_usage_user_id_idx" ON "token_usage"("user_id");
+
+-- admin_settings
+CREATE TABLE IF NOT EXISTS "admin_settings" (
+    "key" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "admin_settings_pkey" PRIMARY KEY ("key")
+);
+
+-- Default settings
+INSERT INTO "admin_settings" ("key", "value") VALUES
+  ('daily_budget_usd', '10'),
+  ('alert_yellow_tokens_per_hour', '50000'),
+  ('alert_red_tokens_per_hour', '200000')
+ON CONFLICT ("key") DO NOTHING;

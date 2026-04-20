@@ -29,6 +29,26 @@ type AgentStats = {
   }
 }
 
+type TokenStats = {
+  today: {
+    tokens: number
+    cost: number
+    byAgent: { agent: string; tokens: number; cost: number }[]
+    byType: { actionType: string; tokens: number; cost: number }[]
+  }
+  month: {
+    cost: number
+    forecast: number
+    byDay: { day: string; tokens: number; cost: number }[]
+  }
+}
+
+type AdminSettings = {
+  daily_budget_usd: string
+  alert_yellow_tokens_per_hour: string
+  alert_red_tokens_per_hour: string
+}
+
 type ActivityLog = {
   id: string
   action: string
@@ -67,12 +87,19 @@ function formatDate(iso: string) {
 export default function AdminPage() {
   const { user: session, status } = useSession()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'activity'>('activity')
+  const [tab, setTab] = useState<'activity' | 'users' | 'costs' | 'limits'>('activity')
   const [users, setUsers] = useState<User[]>([])
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
   const [agentStats, setAgentStats] = useState<AgentStats | null>(null)
+  const [tokenStats, setTokenStats] = useState<TokenStats | null>(null)
+  const [settings, setSettings] = useState<AdminSettings>({
+    daily_budget_usd: '10',
+    alert_yellow_tokens_per_hour: '50000',
+    alert_red_tokens_per_hour: '200000',
+  })
+  const [savingSettings, setSavingSettings] = useState(false)
 
   // Захист — тільки ADMIN (через useEffect щоб не порушувати Rules of Hooks)
   useEffect(() => {
@@ -85,17 +112,23 @@ export default function AdminPage() {
     if (status !== 'authenticated' || session?.role !== 'ADMIN') return
     async function load() {
       setLoading(true)
-      const [usersRes, logsRes, statsRes] = await Promise.all([
+      const [usersRes, logsRes, statsRes, tokenRes, settingsRes] = await Promise.all([
         fetch('/api/admin/users'),
         fetch(`/api/admin/activity${selectedUser ? `?userId=${selectedUser}` : ''}`),
         fetch('/api/admin/stats'),
+        fetch('/api/admin/token-stats'),
+        fetch('/api/admin/settings'),
       ])
       const usersData = await usersRes.json()
       const logsData = await logsRes.json()
       const statsData = await statsRes.json()
+      const tokenData = await tokenRes.json()
+      const settingsData = await settingsRes.json()
       setUsers(usersData.users ?? [])
       setLogs(logsData.logs ?? [])
       setAgentStats(statsData ?? null)
+      setTokenStats(tokenData ?? null)
+      if (settingsData && !settingsData.error) setSettings(settingsData)
       setLoading(false)
     }
     load()
@@ -164,17 +197,36 @@ export default function AdminPage() {
       )}
 
       {/* Таби */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         <TabBtn active={tab === 'activity'} onClick={() => setTab('activity')}>Активність</TabBtn>
         <TabBtn active={tab === 'users'} onClick={() => setTab('users')}>Користувачі</TabBtn>
+        <TabBtn active={tab === 'costs'} onClick={() => setTab('costs')}>💰 Витрати</TabBtn>
+        <TabBtn active={tab === 'limits'} onClick={() => setTab('limits')}>⚙️ Ліміти</TabBtn>
       </div>
 
       {loading ? (
         <div className="text-white/40 text-center py-20">Завантаження...</div>
       ) : tab === 'activity' ? (
         <ActivityTable logs={logs} selectedUser={selectedUser} onClear={() => setSelectedUser(null)} />
-      ) : (
+      ) : tab === 'users' ? (
         <UsersTable users={users} onSelectUser={(id) => { setSelectedUser(id); setTab('activity') }} />
+      ) : tab === 'costs' ? (
+        <CostsPanel stats={tokenStats} />
+      ) : (
+        <LimitsPanel
+          settings={settings}
+          saving={savingSettings}
+          onChange={(k, v) => setSettings((s) => ({ ...s, [k]: v }))}
+          onSave={async () => {
+            setSavingSettings(true)
+            await fetch('/api/admin/settings', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(settings),
+            })
+            setSavingSettings(false)
+          }}
+        />
       )}
     </div>
   )
@@ -370,6 +422,147 @@ function FunnelRow({ label, value, max, color }: { label: string; value: number;
       <div className="text-white/70 text-xs w-20 text-right shrink-0">
         {value} <span className="text-white/30">({pct}%)</span>
       </div>
+    </div>
+  )
+}
+
+// ---- Витрати ----
+
+const AGENT_ICONS: Record<string, string> = { LUNA: '🌙', ARCAS: '🃏', NUMI: '🔢', UMBRA: '🧠' }
+const ACTION_TYPE_LABELS: Record<string, string> = {
+  chat: 'Чати з юзерами', post: 'Генерація постів',
+  monitor: 'Моніторинг груп', video: 'Відео тексти',
+}
+
+function CostsPanel({ stats }: { stats: TokenStats | null }) {
+  if (!stats) return <div className="text-white/30 text-center py-20">Немає даних</div>
+  const { today, month } = stats
+  const maxDay = Math.max(...month.byDay.map((d) => d.cost), 0.001)
+
+  return (
+    <div className="space-y-6">
+      {/* Сьогодні */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+        <h2 className="text-white/60 text-xs uppercase tracking-widest mb-4">Сьогодні</h2>
+        <div className="grid grid-cols-2 gap-4 mb-5">
+          <div>
+            <div className="text-2xl font-bold text-white">{today.tokens.toLocaleString()}</div>
+            <div className="text-xs text-white/40">токенів</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-green-400">${today.cost.toFixed(4)}</div>
+            <div className="text-xs text-white/40">витрачено</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          {today.byAgent.map(({ agent, tokens, cost }) => (
+            <div key={agent} className="bg-white/5 rounded-xl p-3">
+              <div className="text-lg mb-0.5">{AGENT_ICONS[agent]}</div>
+              <div className="text-white text-sm font-semibold">{agent}</div>
+              <div className="text-white/50 text-xs">{tokens.toLocaleString()} tok</div>
+              <div className="text-green-400/80 text-xs">${cost.toFixed(4)}</div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-1.5">
+          {today.byType.map(({ actionType, tokens }) => (
+            tokens > 0 && (
+              <div key={actionType} className="flex justify-between text-xs">
+                <span className="text-white/50">{ACTION_TYPE_LABELS[actionType] ?? actionType}</span>
+                <span className="text-white/70">{tokens.toLocaleString()} токенів</span>
+              </div>
+            )
+          ))}
+        </div>
+      </div>
+
+      {/* За місяць */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-white/60 text-xs uppercase tracking-widest">Цей місяць</h2>
+          <div className="text-right">
+            <span className="text-white font-semibold">${month.cost.toFixed(2)}</span>
+            <span className="text-white/30 text-xs ml-2">прогноз: ${month.forecast.toFixed(2)}</span>
+          </div>
+        </div>
+        {/* Простий bar chart */}
+        <div className="flex items-end gap-1 h-20">
+          {month.byDay.map(({ day, cost }) => (
+            <div key={day} className="flex-1 flex flex-col items-center gap-1 group relative">
+              <div
+                className="w-full bg-green-500/50 hover:bg-green-400/70 rounded-sm transition-all cursor-default"
+                style={{ height: `${Math.max(4, (cost / maxDay) * 72)}px` }}
+                title={`${day}: $${cost.toFixed(4)}`}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-between text-white/20 text-xs mt-1">
+          <span>{month.byDay[0]?.day?.slice(8) ?? '1'}</span>
+          <span>{month.byDay[month.byDay.length - 1]?.day?.slice(8) ?? '31'}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---- Ліміти ----
+
+function LimitsPanel({
+  settings, saving, onChange, onSave,
+}: {
+  settings: AdminSettings
+  saving: boolean
+  onChange: (k: keyof AdminSettings, v: string) => void
+  onSave: () => void
+}) {
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 max-w-lg space-y-5">
+      <h2 className="text-white/60 text-xs uppercase tracking-widest">Налаштування лімітів</h2>
+
+      <LimitField
+        label="Денний бюджет ($)"
+        hint="При перевищенні — Telegram алерт"
+        value={settings.daily_budget_usd}
+        onChange={(v) => onChange('daily_budget_usd', v)}
+      />
+      <LimitField
+        label="Жовтий алерт (токенів/год)"
+        hint="Попередження в Telegram"
+        value={settings.alert_yellow_tokens_per_hour}
+        onChange={(v) => onChange('alert_yellow_tokens_per_hour', v)}
+      />
+      <LimitField
+        label="Червоний алерт (токенів/год)"
+        hint="Автоматичне блокування мага на 1 годину"
+        value={settings.alert_red_tokens_per_hour}
+        onChange={(v) => onChange('alert_red_tokens_per_hour', v)}
+      />
+
+      <button
+        onClick={onSave}
+        disabled={saving}
+        className="w-full py-3 rounded-xl bg-lumara-600 hover:bg-lumara-500 text-white text-sm font-medium transition-all disabled:opacity-50"
+      >
+        {saving ? 'Зберігаємо...' : 'Зберегти ліміти'}
+      </button>
+    </div>
+  )
+}
+
+function LimitField({ label, hint, value, onChange }: {
+  label: string; hint: string; value: string; onChange: (v: string) => void
+}) {
+  return (
+    <div>
+      <label className="block text-white/70 text-sm mb-1">{label}</label>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white text-sm focus:outline-none focus:border-lumara-500/50 transition-all"
+      />
+      <p className="text-white/30 text-xs mt-1">{hint}</p>
     </div>
   )
 }
