@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
   console.log(`[middleware] ${path} | user: ${user?.email ?? 'null'} | error: ${error?.message ?? 'none'} | cookies: ${JSON.stringify(allCookieNames)}`)
 
   const publicPaths = [
-    '/', '/login', '/pricing', '/mages',
+    '/', '/login', '/pricing', '/mages', '/links',
     '/api/auth', '/api/stripe/webhook', '/api/debug', '/api/debug-cookie', '/auth',
   ]
   const isPublic = publicPaths.some((p) => path === p || path.startsWith(p + '/'))
