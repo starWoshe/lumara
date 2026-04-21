@@ -10,9 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.20.9",
-    "@lumara/shared": "workspace:*",
-    "openai": "^4.47.1"
+    "@lumara/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.19.37",
