@@ -4,7 +4,6 @@ import Anthropic from '@anthropic-ai/sdk'
 import { db } from '@lumara/database'
 import {
   AgentType,
-  AGENT_MODELS,
   AGENT_TOKEN_LIMITS,
   getAgentSystemPrompt,
   getAgentFirstMessage,
@@ -15,6 +14,7 @@ import { FREE_MESSAGES_LIMIT, PLANS } from '@/lib/stripe'
 import { calcCostUsd } from '@/lib/token-costs'
 import { checkTokenAlerts } from '@/lib/token-alerts'
 
+export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 function getAnthropicClient() {
