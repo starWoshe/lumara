@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { db } from '@lumara/database'
 import type { SubscriptionPlan, SubscriptionStatus } from '@lumara/database'
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
+    event = getStripe().webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch (err) {
     console.error('[stripe/webhook] невірний підпис:', err)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
@@ -63,7 +63,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (!userId || !plan || !STRIPE_PLAN_MAP[plan]) return
 
   const stripeSubId = session.subscription as string
-  const stripeSub = await stripe.subscriptions.retrieve(stripeSubId) as unknown as { items: { data: Array<{ price: { id: string } }> }, status: string, current_period_start?: number, current_period_end?: number }
+  const stripeSub = await getStripe().subscriptions.retrieve(stripeSubId) as unknown as { items: { data: Array<{ price: { id: string } }> }, status: string, current_period_start?: number, current_period_end?: number }
 
   await db.subscription.upsert({
     where: { stripeCustomerId: session.customer as string },

@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { getSessionUser } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe, PLANS, type PlanKey } from '@/lib/stripe'
+import { getStripe, PLANS, type PlanKey } from '@/lib/stripe'
 import { db } from '@lumara/database'
 
 export async function GET(req: NextRequest) {
@@ -26,12 +26,12 @@ export async function GET(req: NextRequest) {
     let stripeCustomerId = subscription?.stripeCustomerId ?? null
 
     if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({ email, metadata: { userId } })
+      const customer = await getStripe().customers.create({ email, metadata: { userId } })
       stripeCustomerId = customer.id
     }
 
     // Створюємо Checkout Session
-    const checkoutSession = await stripe.checkout.sessions.create({
+    const checkoutSession = await getStripe().checkout.sessions.create({
       customer: stripeCustomerId,
       mode: 'subscription',
       payment_method_types: ['card'],
