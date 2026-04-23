@@ -29,9 +29,11 @@ model User {
   image         String?
   role          UserRole  @default(USER)
   tenantId      String?   @map("tenant_id")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at")
+  reactivationSentAt    DateTime? @map("reactivation_sent_at")
+  emailUnsubscribedAt   DateTime? @map("email_unsubscribed_at")
 
   // Зв'язки
   profile       Profile?
@@ -128,12 +130,13 @@ model Profile {
   birthPlace  String?   @map("birth_place")
   goal              String?
   acquisitionSource String?   @map("acquisition_source")
-  language    String    @default("uk")
-  timezone    String    @default("Europe/Kiev")
-  tenantId    String?   @map("tenant_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
+  language         String    @default("uk")
+  timezone         String    @default("Europe/Kiev")
+  lastVisitedAgent AgentType? @map("last_visited_agent")
+  tenantId         String?   @map("tenant_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

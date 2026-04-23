@@ -27,6 +27,10 @@ type AgentStats = {
     monetizationTrigger: number
     converted: number
   }
+  reactivation: {
+    sent: number
+    converted: number
+  }
 }
 
 type TokenStats = {
@@ -166,6 +170,27 @@ export default function AdminPage() {
         />
       </div>
 
+      {/* Реактивація */}
+      {agentStats && (
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <StatCard
+            label="Реактиваційних листів надіслано"
+            value={agentStats.reactivation.sent}
+            icon="📧"
+          />
+          <StatCard
+            label="Конверсія реактивації"
+            value={
+              agentStats.reactivation.sent > 0
+                ? Math.round((agentStats.reactivation.converted / agentStats.reactivation.sent) * 100)
+                : 0
+            }
+            icon="📈"
+            suffix="%"
+          />
+        </div>
+      )}
+
       {/* Розбивка по магах */}
       {agentStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -234,11 +259,11 @@ export default function AdminPage() {
 
 // ---- Під-компоненти ----
 
-function StatCard({ label, value, icon }: { label: string; value: number; icon: string }) {
+function StatCard({ label, value, icon, suffix }: { label: string; value: number; icon: string; suffix?: string }) {
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
       <div className="text-2xl mb-1">{icon}</div>
-      <div className="text-2xl font-bold text-white">{value}</div>
+      <div className="text-2xl font-bold text-white">{value}{suffix ?? ''}</div>
       <div className="text-xs text-white/40 mt-1">{label}</div>
     </div>
   )

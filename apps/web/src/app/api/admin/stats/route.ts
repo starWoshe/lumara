@@ -23,7 +23,7 @@ export async function GET() {
     if (type) conversationsByAgent[type] = row._count.id
   }
 
-  const [totalUsers, activatedUsers, convertedUsers, monetizationRows] = await Promise.all([
+  const [totalUsers, activatedUsers, convertedUsers, monetizationRows, reactivationStats] = await Promise.all([
     db.user.count({ where: { deletedAt: null } }),
     db.user.count({ where: { deletedAt: null, conversations: { some: { deletedAt: null } } } }),
     db.subscription.count({ where: { status: 'ACTIVE' } }),
@@ -37,6 +37,17 @@ export async function GET() {
         HAVING COUNT(m.id) >= 12
       ) sub
     `,
+    // Статистика реактивації
+    db.$queryRaw<{ sent: bigint; converted: bigint }[]>`
+      SELECT
+        COUNT(*)::bigint AS sent,
+        COUNT(DISTINCT CASE WHEN m.id IS NOT NULL THEN u.id END)::bigint AS converted
+      FROM users u
+      LEFT JOIN conversations c ON c.user_id = u.id AND c.deleted_at IS NULL
+      LEFT JOIN messages m ON m.conversation_id = c.id AND m.role = 'USER' AND m.deleted_at IS NULL AND m.created_at > u.reactivation_sent_at
+      WHERE u.reactivation_sent_at IS NOT NULL
+        AND u.deleted_at IS NULL
+    `,
   ])
 
   return NextResponse.json({
@@ -46,6 +57,10 @@ export async function GET() {
       activated: activatedUsers,
       monetizationTrigger: Number(monetizationRows[0]?.count ?? 0),
       converted: convertedUsers,
+    },
+    reactivation: {
+      sent: Number(reactivationStats[0]?.sent ?? 0),
+      converted: Number(reactivationStats[0]?.converted ?? 0),
     },
   })
 }

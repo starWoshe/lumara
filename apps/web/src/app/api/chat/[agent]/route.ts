@@ -149,6 +149,10 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
       db.activityLog.create({
         data: { userId, action: 'CHAT_STARTED', metadata: { agent: agentType } },
       }).catch(() => {})
+      db.profile.update({
+        where: { userId },
+        data: { lastVisitedAgent: agentType },
+      }).catch(() => {})
       return sseResponse(firstMessage, conversation.id)
     }
 
