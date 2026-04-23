@@ -356,6 +356,57 @@ model TokenUsage {
   @@map("token_usage")
 }
 
+// =========================================
+// АКТИВНИЙ ПОШУК КЛІЄНТІВ (OUTREACH)
+// =========================================
+
+enum OutreachPlatform {
+  TELEGRAM_GROUP
+  INSTAGRAM_COMMENT
+}
+
+enum OutreachLanguage {
+  UK
+  RU
+  EN
+  DE
+}
+
+model OutreachResponse {
+  id               String           @id @default(uuid())
+  platform         OutreachPlatform
+  agentType        AgentType        @map("agent_type")
+  language         OutreachLanguage
+  groupHandle      String?          @map("group_handle")
+  externalPostId   String?          @map("external_post_id")
+  externalThreadId String?          @map("external_thread_id")
+  triggerPhrase    String?          @map("trigger_phrase")
+  responseText     String           @map("response_text") @db.Text
+  targetUrl        String?          @map("target_url")
+  userHandle       String?          @map("user_handle")
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  @@index([platform, createdAt])
+  @@index([agentType, createdAt])
+  @@index([language])
+  @@map("outreach_responses")
+}
+
+model ReferralClick {
+  id        String     @id @default(uuid())
+  source    String
+  agentType AgentType? @map("agent_type")
+  utmSource String?    @map("utm_source")
+  utmMedium String?    @map("utm_medium")
+  ipAddress String?    @map("ip_address")
+  userAgent String?    @map("user_agent")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@index([source, createdAt])
+  @@index([agentType])
+  @@map("referral_clicks")
+}
+
 model AdminSetting {
   key       String   @id
   value     String
