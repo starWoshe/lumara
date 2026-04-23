@@ -17,6 +17,9 @@ ALTER TABLE "subscriptions"       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "courses"             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "enrollments"         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "content_queue"       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "activity_logs"       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "token_usage"         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "admin_settings"      ENABLE ROW LEVEL SECURITY;
 
 -- ──────────────────────────────────────────────────────────────────────────────
 -- ПРИМІТКА: service_role (Prisma backend) автоматично обходить RLS.
@@ -191,3 +194,35 @@ CREATE POLICY "enrollments: власне створення"
 -- ──────────────────────────────────────────────────────────────────────────────
 -- Доступ тільки через service_role (GitHub Actions, Prisma)
 -- RLS заблокує будь-який прямий доступ через anon/authenticated
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 14. activity_logs
+-- ──────────────────────────────────────────────────────────────────────────────
+
+DROP POLICY IF EXISTS "activity_logs: власний перегляд" ON "activity_logs";
+CREATE POLICY "activity_logs: власний перегляд"
+  ON "activity_logs" FOR SELECT
+  TO authenticated
+  USING (auth.uid()::text = user_id::text);
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 15. token_usage
+-- ──────────────────────────────────────────────────────────────────────────────
+
+DROP POLICY IF EXISTS "token_usage: власний перегляд" ON "token_usage";
+CREATE POLICY "token_usage: власний перегляд"
+  ON "token_usage" FOR SELECT
+  TO authenticated
+  USING (auth.uid()::text = user_id::text);
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 16. admin_settings (тільки backend/admin — жодних публічних політик)
+-- ──────────────────────────────────────────────────────────────────────────────
+-- Доступ тільки через service_role (Prisma backend)
+-- RLS заблокує будь-який прямий доступ через anon/authenticated
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 17. verification_tokens (NextAuth — тільки через backend)
+-- ──────────────────────────────────────────────────────────────────────────────
+-- Немає user_id, тому доступ тільки через service_role (Prisma)
+-- Жодних публічних політик — RLS блокує прямий доступ
