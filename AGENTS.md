@@ -306,6 +306,23 @@ ADMIN_EMAIL=
 6. **Нові модулі** — перед реалізацією створи `INSTRUCTIONS.md` у папці модуля (див. `CLAUDE.md`)
 7. **Секрети** — ніколи не хардкодь ключі; використовуй `.env.local` / Vercel Env Variables
 8. **Протухлі ключі** — якщо під час роботи є підозра, що API-ключ, токен або секрет протух/недійсний, **обов'язково попередь користувача** перш ніж робити зміни в коді
+9. **Lazy init для SDK** — не ініціалізуй сторонні SDK (Stripe, Anthropic, OpenAI) на рівні модуля якщо для цього потрібні змінні середовища. Використовуй `getStripe()`, `getAnthropicClient()` тощо, щоб уникнути помилок під час білда
+10. **Промпти** — після будь-якої зміни markdown промптів у `packages/agents/` обов'язково запускай `pnpm --filter @lumara/agents build:prompts`
+
+## 🗄️ Supabase — підтримка активності
+
+Free-tier проєкти Supabase автоматично призупиняються (paused) після 7 днів неактивності.
+
+- **Рішення:** Vercel Cron щоденно б'є в `/api/health` (потребує `CRON_SECRET` у змінних середовища)
+- **Відновлення:** Unpause через Supabase Dashboard протягом 90 днів
+- **Workflow:** `db-deploy.yml` застосовує `rls-policies.sql` тільки при пуші в `main`
+
+## 🐞 Відомі помилки
+
+| Помилка | Джерело | Рішення |
+|---------|---------|---------|
+| `Neither apiKey nor config.authenticator provided` | **Stripe SDK** (не Anthropic!) — `new Stripe()` без `STRIPE_SECRET_KEY` | Lazy init через `getStripe()` |
+| `ERR_PNPM_OUTDATED_LOCKFILE` | `pnpm-lock.yaml` не синхронізований з `package.json` | `pnpm install --no-frozen-lockfile` → коміт |
 
 ## 📂 Корисні посилання
 
@@ -317,5 +334,5 @@ ADMIN_EMAIL=
 
 ---
 
-*Останнє оновлення: Квітень 2026*
+*Останнє оновлення: 23 Квітня 2026*
 *Проект: LUMARA Academy · lumara.fyi*
