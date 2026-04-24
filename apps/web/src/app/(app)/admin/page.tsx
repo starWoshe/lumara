@@ -131,9 +131,11 @@ export default function AdminPage() {
         const settingsData = await settingsRes.json().catch(() => ({}))
         setUsers(usersData.users ?? [])
         setLogs(logsData.logs ?? [])
-        setAgentStats(statsData ?? null)
-        setTokenStats(tokenData ?? null)
-        if (settingsData && !settingsData.error) setSettings(settingsData)
+        setAgentStats(statsData?.funnel ? statsData : null)
+        setTokenStats(tokenData?.today ? tokenData : null)
+        if (settingsData && !settingsData.error && settingsData.daily_budget_usd) {
+          setSettings(settingsData)
+        }
       } catch (err) {
         console.error('[admin] помилка завантаження даних:', err)
       } finally {
