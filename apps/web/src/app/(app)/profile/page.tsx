@@ -59,9 +59,9 @@ export default function ProfilePage() {
       const data = await res.json()
       console.log('[profile] відповідь сервера:', data)
       if (!res.ok) {
-        alert('Помилка збереження: ' + (data.error || data.details || 'невідома помилка'))
+        alert('Помилка збереження: ' + (data.details || data.error || 'невідома помилка'))
       } else if (data.error) {
-        alert('Помилка: ' + data.error)
+        alert('Помилка: ' + (data.details || data.error))
       } else {
         setSaved(true)
         setTimeout(() => setSaved(false), 3000)

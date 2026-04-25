@@ -35,7 +35,13 @@ export async function PATCH(req: Request) {
     const body = await req.json()
     console.log('[profile PATCH] body:', body)
 
-    const data = profileSchema.parse(body)
+    const parsed = profileSchema.safeParse(body)
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ')
+      console.error('[profile PATCH] validation error:', issues)
+      return NextResponse.json({ error: 'Validation error', details: issues }, { status: 400 })
+    }
+    const data = parsed.data
 
     // Нормалізуємо порожні рядки в null — користувачі можуть очищати поля
     const fullName   = data.fullName?.trim()  || null
