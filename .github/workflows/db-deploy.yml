@@ -36,6 +36,9 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @lumara/database db:generate
 
+      - name: Push Prisma Schema to DB
+        run: pnpm --filter @lumara/database exec prisma db push --skip-generate
+
       - name: Deploy Prisma Migrations
         run: |
           if [ -d "packages/database/prisma/migrations" ] && [ "$(ls -A packages/database/prisma/migrations)" ]; then
