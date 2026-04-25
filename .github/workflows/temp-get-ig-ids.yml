@@ -1,0 +1,49 @@
+name: 🔍 Отримати Instagram Business Account IDs
+
+# Тимчасовий workflow — видалити після використання
+# Запускається вручну, бере IG_ACCESS_TOKEN з GitHub Secrets і виводить
+# instagram_business_account.id для всіх Facebook Pages.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-ig-ids:
+    name: Отримати IG IDs через Graph API
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Запит до Graph API /me/accounts
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: |
+          echo "🔍 Запитуємо Pages та Instagram Business Accounts..."
+          
+          RESPONSE=$(curl -s \
+            "https://graph.facebook.com/v22.0/me/accounts?fields=name,instagram_business_account{username,id}&access_token=${IG_ACCESS_TOKEN}")
+
+          echo "📦 Відповідь API:"
+          echo "$RESPONSE" | jq .
+
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📋 Результат для .env.local:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Парсимо і виводимо тільки потрібні поля
+          echo "$RESPONSE" | jq -r '
+            .data[] |
+            "\n📄 Page: \(.name)
+   Page ID: \(.id)
+   IG:      @\(.instagram_business_account.username // "НЕ ПІДКЛЮЧЕНО")
+   IG ID:   \(.instagram_business_account.id // "—")
+   ─────────────────────────────────────────────────────"
+          '
+
+          echo ""
+          echo "✅ Скопіюй IG ID у змінні середовища:"
+          echo "   LUNA_IG_USER_ID=..."
+          echo "   ARCAS_IG_USER_ID=..."
+          echo "   NUMI_IG_USER_ID=..."
+          echo "   UMBRA_IG_USER_ID=..."
