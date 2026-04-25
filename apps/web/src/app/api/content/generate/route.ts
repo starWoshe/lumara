@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ content: text })
   } catch (error) {
-    console.error('[content/generate] помилка:', error)
+
     return NextResponse.json(
       { error: 'Помилка генерації контенту' },
       { status: 500 }

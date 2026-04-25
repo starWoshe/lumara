@@ -14,31 +14,31 @@ const profileSchema = z.object({
 
 export async function GET() {
   const session = await getSessionUser()
-  console.log('[profile GET] session:', session)
+
   if (!session?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const profile = await db.profile.findUnique({ where: { userId: session.id } })
-  console.log('[profile GET] profile:', profile)
+
   return NextResponse.json(profile)
 }
 
 export async function PATCH(req: Request) {
   try {
     const session = await getSessionUser()
-    console.log('[profile PATCH] session:', session)
+
     if (!session?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await req.json()
-    console.log('[profile PATCH] body:', body)
+
 
     const parsed = profileSchema.safeParse(body)
     if (!parsed.success) {
       const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ')
-      console.error('[profile PATCH] validation error:', issues)
+
       return NextResponse.json({ error: 'Validation error', details: issues }, { status: 400 })
     }
     const data = parsed.data
@@ -60,12 +60,12 @@ export async function PATCH(req: Request) {
       }
     }
 
-    console.log('[profile PATCH] normalized:', { fullName, gender, birthDate, birthTime, birthPlace, goal })
+
 
     // Гарантуємо, що користувач існує в БД (fixes Foreign key constraint)
     const existingUser = await db.user.findUnique({ where: { id: session.id } })
     if (!existingUser) {
-      console.log('[profile PATCH] користувач не знайдений в БД, створюємо...')
+
       try {
         await db.user.create({
           data: {
@@ -77,7 +77,7 @@ export async function PATCH(req: Request) {
           },
         })
       } catch (userErr) {
-        console.error('[profile PATCH] не вдалося створити користувача:', userErr)
+
       }
     }
 
@@ -97,10 +97,10 @@ export async function PATCH(req: Request) {
       },
     })
 
-    console.log('[profile PATCH] saved:', profile)
+
     return NextResponse.json(profile)
   } catch (err: unknown) {
-    console.error('[profile PATCH] помилка:', err)
+
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: 'Server error', details: message }, { status: 500 })
   }

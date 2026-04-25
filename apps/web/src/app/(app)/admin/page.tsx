@@ -153,7 +153,7 @@ export default function AdminPage() {
           setSettings(settingsData)
         }
       } catch (err) {
-        console.error('[admin] помилка завантаження даних:', err)
+
       } finally {
         setLoading(false)
       }

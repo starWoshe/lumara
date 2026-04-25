@@ -140,14 +140,14 @@ export function getAgentFirstMessage(agentType: AgentType, profile?: ProfileLike
     // ARCAS and UMBRA
     return safeReplace(extractQuoted(template), /\[Ім'я\]/g, name)
   } catch (err) {
-    console.error('[agents] помилка getAgentFirstMessage:', err)
+
     return 'Привіт, Друже! Радий тебе бачити. Чим можу допомогти?'
   }
 }
 
 function getMoonSignPlaceholder(_birthDate: Date | string): string {
   // Real astrology calculation is out of scope for this prompt layer;
-  // return a culturally resonant placeholder.
+
   const signs = [
     'Рибах',
     'Терезах',

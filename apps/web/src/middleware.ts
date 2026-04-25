@@ -27,11 +27,12 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname
   const allCookieNames = request.cookies.getAll().map(c => c.name)
-  console.log(`[middleware] ${path} | user: ${user?.email ?? 'null'} | error: ${error?.message ?? 'none'} | cookies: ${JSON.stringify(allCookieNames)}`)
+  // Діагностичний лог прибрано
+  void allCookieNames
 
   const publicPaths = [
     '/', '/login', '/pricing', '/mages', '/links',
-    '/api/auth', '/api/stripe/webhook', '/api/debug', '/api/debug-cookie', '/auth',
+    '/api/auth', '/api/stripe/webhook', '/auth',
     '/api/cron', '/api/academy',
   ]
   const isPublic = publicPaths.some((p) => path === p || path.startsWith(p + '/'))

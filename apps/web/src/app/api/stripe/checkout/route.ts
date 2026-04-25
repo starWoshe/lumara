@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.redirect(checkoutSession.url!)
   } catch (error) {
-    console.error('[stripe/checkout]', error)
+
     return NextResponse.json({ error: String(error) }, { status: 500 })
   }
 }

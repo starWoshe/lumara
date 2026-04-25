@@ -28,4 +28,3 @@ export interface GeneratedContent {
 }
 
 // TODO: Реалізувати генератор контенту у Фазі 3
-// export async function generateContent(request: ContentGenerationRequest): Promise<GeneratedContent>

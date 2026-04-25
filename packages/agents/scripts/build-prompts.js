@@ -9,7 +9,7 @@ function read(agent, filename) {
   try {
     return fs.readFileSync(file, 'utf-8')
   } catch (e) {
-    console.error(`Failed to read ${file}: ${e.message}`)
+
     process.exit(1)
   }
 }
@@ -65,4 +65,4 @@ for (const agent of agents) {
 output += `}\n`
 
 fs.writeFileSync(outFile, output, 'utf-8')
-console.log(`Generated ${outFile}`)
+

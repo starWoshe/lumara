@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   try {
     event = getStripe().webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch (err) {
-    console.error('[stripe/webhook] невірний підпис:', err)
+
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       }
     }
   } catch (error) {
-    console.error('[stripe/webhook] помилка обробки:', error)
+
     return NextResponse.json({ error: String(error) }, { status: 500 })
   }
 

@@ -60,7 +60,7 @@ async function withRetry<T>(
       lastError = err
       if (!isOverloadedError(err) || attempt === maxRetries) throw err
       const delay = baseDelayMs * 2 ** attempt + Math.random() * 500
-      console.warn(`[chat/route] Anthropic перевантажений (529), спроба ${attempt + 1}/${maxRetries}, затримка ${Math.round(delay)}ms`)
+
       await new Promise((r) => setTimeout(r, delay))
     }
   }
@@ -103,7 +103,7 @@ function buildProfileContext(
     if (parts.length === 0) return ''
     return `\n\n---\nPERSONAL DATA — ALREADY KNOWN. Use directly. NEVER ask the user for any of this information again:\n${parts.join('\n')}\nIMPORTANT: The user has already provided this data. Asking them to repeat it is a critical error that breaks immersion.\n---`
   } catch (err) {
-    console.error('[chat/route] помилка buildProfileContext:', err)
+
     return ''
   }
 }
@@ -321,7 +321,7 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
         },
       }).then(() => checkTokenAlerts(agentType!)).catch(() => {})
     } catch (apiErr) {
-      console.error('[chat/route] API помилка після всіх спроб:', apiErr)
+
       return sseResponse(getAgentErrorMessage(agentType), '')
     }
 
@@ -335,7 +335,7 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
 
     return sseResponse(responseText, conversation.id)
   } catch (error) {
-    console.error('[chat/route] помилка:', error)
+
     return sseResponse(getAgentErrorMessage(agentType), '')
   }
 }

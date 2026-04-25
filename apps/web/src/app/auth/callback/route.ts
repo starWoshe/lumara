@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
     ? `https://${forwardedHost.split(',')[0].trim()}`
     : new URL(request.url).origin
 
-  console.log('[auth/callback] code present:', !!code, '| origin:', origin)
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`)
@@ -47,11 +46,10 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
-    console.error('[auth/callback] EXCHANGE ERROR:', error.message)
+
     return NextResponse.redirect(`${origin}/login?error=exchange_failed`)
   }
 
-  console.log('[auth/callback] exchange SUCCESS, user:', data.session?.user?.email)
 
   // Логуємо вхід у систему
   const supabaseUserId = data.session?.user?.id

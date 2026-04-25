@@ -1,0 +1,127 @@
+﻿apps/web/public/academy-castle.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(auth)\layout.tsx:50 src="/academy-castle.png"
+apps/web/public/arcas-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(auth)\login\page.tsx:11 { id: 'arcas', name: 'ARCAS', role: 'Таро',          portrait: '/arcas-portrait-1.png', accent: 'rgba(139,92,246,0.6)', pos: 'object-[50%_15%]' },
+apps/web/public/arcas-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:74 portrait: '/arcas-portrait-1.png',
+apps/web/public/arcas-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\arcas\assets\README.md:7 | `arcas-portrait-1.png` | Портрет ARCAS з картою The Moon, бордовий оксамит, перстень з гранатом | ✅ еталон |
+apps/web/public/arcas-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\arcas\assets\README.md:12 ### Портрет (arcas-portrait-1.png)
+apps/web/public/arcas-room.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:76 room: '/arcas-room.png',
+apps/web/public/arcas-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\arcas\assets\README.md:8 | `arcas-room.png` | Кімната ARCAS — дерев'яний стіл, карти таро, дзеркало, ворон на підвіконні, галактика у вікні | ✅ еталон |
+apps/web/public/arcas-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\arcas\assets\README.md:21 ### Кімната (arcas-room.png)
+apps/web/public/lumara-logo.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(app)\layout.tsx:102 <Image src="/lumara-logo.png" alt="LUMARA" width={34} height={34} className="rounded-full flex-shrink-0" />
+apps/web/public/lumara-logo.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(auth)\login\page.tsx:103 src="/lumara-logo.png"
+apps/web/public/lumara-logo.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\links\page.tsx:99 src="/lumara-logo.png"
+apps/web/public/lumara-logo.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\page.tsx:18 <Image src="/lumara-logo.png" alt="LUMARA" width={36} height={36} className="rounded-full" />
+apps/web/public/lumara-logo.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\pricing\page.tsx:114 <Image src="/lumara-logo.png" alt="LUMARA" width={36} height={36} className="rounded-full" />
+apps/web/public/luna-avatar.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\luna\assets\README.md:15 > Оригінали також доступні в `apps/web/public/` (luna-avatar.png, luna-room.png)
+apps/web/public/luna-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(auth)\login\page.tsx:10 { id: 'luna',  name: 'LUNA',  role: 'Астрологія',    portrait: '/luna-portrait-1.png',  accent: 'rgba(99,102,241,0.6)',  pos: 'object-[50%_8%]' },
+apps/web/public/luna-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:44 portrait: '/luna-portrait-1.png',
+apps/web/public/luna-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\luna\assets\README.md:12 | `luna-portrait-1.png` | Портрет LUNA — еталонне фото для HeyGen аватара | ✅ ЕТАЛОН |
+apps/web/public/luna-room.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:46 room: '/luna-room.png',
+apps/web/public/luna-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\luna\assets\README.md:13 | `luna-room.png` | Кімната LUNA | ✅ еталон |
+apps/web/public/luna-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\luna\assets\README.md:15 > Оригінали також доступні в `apps/web/public/` (luna-avatar.png, luna-room.png)
+apps/web/public/numi-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(auth)\login\page.tsx:12 { id: 'numi',  name: 'NUMI',  role: 'Нумерологія',   portrait: '/numi-portrait-1.png',  accent: 'rgba(245,158,11,0.6)', pos: 'object-[50%_50%]' },
+apps/web/public/numi-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:104 portrait: '/numi-portrait-1.png',
+apps/web/public/numi-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\numi\assets\README.md:7 | `numi-portrait-1.png` | Портрет NUMI з книгою 369, смарагдова сукня, руде волосся, SEPTA поруч | ✅ еталон |
+apps/web/public/numi-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\numi\assets\README.md:12 ### Портрет (numi-portrait-1.png)
+apps/web/public/numi-room.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:106 room: '/numi-room.png',
+apps/web/public/numi-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\numi\assets\README.md:8 | `numi-room.png` | Кімната NUMI — творчий хаос, числа на стінах, SEPTA спить на столі, галактика у вікні | ✅ еталон |
+apps/web/public/numi-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\numi\assets\README.md:22 ### Кімната (numi-room.png)
+apps/web/public/starry-sky.jpg	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(app)\layout.tsx:51 src="/starry-sky.jpg"
+apps/web/public/starry-sky.jpg	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\pricing\page.tsx:98 src="/starry-sky.jpg"
+apps/web/public/umbra-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(auth)\login\page.tsx:13 { id: 'umbra', name: 'UMBRA', role: 'Езо-психологія',portrait: '/umbra-portrait-1.png', accent: 'rgba(100,116,139,0.6)',pos: 'object-[50%_25%]' },
+apps/web/public/umbra-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:134 portrait: '/umbra-portrait-1.png',
+apps/web/public/umbra-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\umbra\assets\README.md:7 | `umbra-portrait-1.png` | Портрет UMBRA з дзеркалом, чорний топ + сіра спідниця, MORA на плечі | ✅ еталон |
+apps/web/public/umbra-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\umbra\assets\README.md:12 ### Портрет (umbra-portrait-1.png)
+apps/web/public/umbra-room-2.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:136 room: '/umbra-room-2.png',
+apps/web/public/umbra-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\umbra\assets\README.md:8 | `umbra-room.png` | Кімната UMBRA — мінімалізм, велике дзеркало, готичне склепіння, символи на стіні, прозорий фон | ✅ еталон |
+apps/web/public/umbra-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\umbra\assets\README.md:22 ### Кімната (umbra-room.png)
+arcas-biz-pages.jpeg	NOT_USED
+arcas-connected.jpeg	NOT_USED
+arcas-page.jpeg	NOT_USED
+arcas-partners.jpeg	NOT_USED
+arcas-partners2.jpeg	NOT_USED
+arcas-people.jpeg	NOT_USED
+arcas-settings.jpeg	NOT_USED
+biz-select.jpeg	NOT_USED
+bm-after-dots.png	NOT_USED
+bm-arcas-page.png	NOT_USED
+bm-arcas.png	NOT_USED
+bm-assign-access.png	NOT_USED
+bm-current.png	NOT_USED
+bm-dots-menu.png	NOT_USED
+bm-dropdown.png	NOT_USED
+bm-more-menu.png	NOT_USED
+bm-numi.png	NOT_USED
+bm-pages.png	NOT_USED
+bm-sysusers.png	NOT_USED
+chat-arcas.png	NOT_USED
+fb-login.png	NOT_USED
+generate-token-dialog.jpeg	NOT_USED
+graph-api-explorer.jpeg	NOT_USED
+graph-api-explorer.png	NOT_USED
+landing.png	NOT_USED
+login-page.png	NOT_USED
+lumara-bot-selected.jpeg	NOT_USED
+lumara-bot.jpeg	NOT_USED
+lumara-sysusers.jpeg	NOT_USED
+meta-add-usecase.png	NOT_USED
+meta-after-click.png	NOT_USED
+meta-all-scrolled.png	NOT_USED
+meta-all-usecases.png	NOT_USED
+meta-app-add-product.png	NOT_USED
+meta-app-create.png	NOT_USED
+meta-app-creating.png	NOT_USED
+meta-app-creating2.png	NOT_USED
+meta-app-details-filled.png	NOT_USED
+meta-app-details.png	NOT_USED
+meta-app-review.png	NOT_USED
+meta-content-mgmt.png	NOT_USED
+meta-content-mgmt2.png	NOT_USED
+meta-dashboard.png	NOT_USED
+meta-instagram-added.png	NOT_USED
+meta-instagram-api-setup.png	NOT_USED
+meta-instagram-content-publish.png	NOT_USED
+meta-instagram-content-publish2.png	NOT_USED
+meta-instagram-fb-login.png	NOT_USED
+meta-instagram-setup.png	NOT_USED
+meta-login.png	NOT_USED
+meta-pages-api.png	NOT_USED
+meta-pages-perms.png	NOT_USED
+meta-permissions-features.png	NOT_USED
+meta-permissions-features2.png	NOT_USED
+meta-permissions-page.png	NOT_USED
+meta-scrolled2.png	NOT_USED
+meta-usecases.png	NOT_USED
+oauth-popup.jpeg	NOT_USED
+packages/agents/arcas/assets/arcas-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(auth)\login\page.tsx:11 { id: 'arcas', name: 'ARCAS', role: 'Таро',          portrait: '/arcas-portrait-1.png', accent: 'rgba(139,92,246,0.6)', pos: 'object-[50%_15%]' },
+packages/agents/arcas/assets/arcas-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:74 portrait: '/arcas-portrait-1.png',
+packages/agents/arcas/assets/arcas-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\arcas\assets\README.md:7 | `arcas-portrait-1.png` | Портрет ARCAS з картою The Moon, бордовий оксамит, перстень з гранатом | ✅ еталон |
+packages/agents/arcas/assets/arcas-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\arcas\assets\README.md:12 ### Портрет (arcas-portrait-1.png)
+packages/agents/arcas/assets/arcas-room.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:76 room: '/arcas-room.png',
+packages/agents/arcas/assets/arcas-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\arcas\assets\README.md:8 | `arcas-room.png` | Кімната ARCAS — дерев'яний стіл, карти таро, дзеркало, ворон на підвіконні, галактика у вікні | ✅ еталон |
+packages/agents/arcas/assets/arcas-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\arcas\assets\README.md:21 ### Кімната (arcas-room.png)
+packages/agents/luna/assets/luna-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(auth)\login\page.tsx:10 { id: 'luna',  name: 'LUNA',  role: 'Астрологія',    portrait: '/luna-portrait-1.png',  accent: 'rgba(99,102,241,0.6)',  pos: 'object-[50%_8%]' },
+packages/agents/luna/assets/luna-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:44 portrait: '/luna-portrait-1.png',
+packages/agents/luna/assets/luna-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\luna\assets\README.md:12 | `luna-portrait-1.png` | Портрет LUNA — еталонне фото для HeyGen аватара | ✅ ЕТАЛОН |
+packages/agents/luna/assets/luna-room.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:46 room: '/luna-room.png',
+packages/agents/luna/assets/luna-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\luna\assets\README.md:13 | `luna-room.png` | Кімната LUNA | ✅ еталон |
+packages/agents/luna/assets/luna-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\luna\assets\README.md:15 > Оригінали також доступні в `apps/web/public/` (luna-avatar.png, luna-room.png)
+packages/agents/numi/assets/numi-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(auth)\login\page.tsx:12 { id: 'numi',  name: 'NUMI',  role: 'Нумерологія',   portrait: '/numi-portrait-1.png',  accent: 'rgba(245,158,11,0.6)', pos: 'object-[50%_50%]' },
+packages/agents/numi/assets/numi-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:104 portrait: '/numi-portrait-1.png',
+packages/agents/numi/assets/numi-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\numi\assets\README.md:7 | `numi-portrait-1.png` | Портрет NUMI з книгою 369, смарагдова сукня, руде волосся, SEPTA поруч | ✅ еталон |
+packages/agents/numi/assets/numi-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\numi\assets\README.md:12 ### Портрет (numi-portrait-1.png)
+packages/agents/numi/assets/numi-room.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:106 room: '/numi-room.png',
+packages/agents/numi/assets/numi-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\numi\assets\README.md:8 | `numi-room.png` | Кімната NUMI — творчий хаос, числа на стінах, SEPTA спить на столі, галактика у вікні | ✅ еталон |
+packages/agents/numi/assets/numi-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\numi\assets\README.md:22 ### Кімната (numi-room.png)
+packages/agents/umbra/assets/umbra-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\(auth)\login\page.tsx:13 { id: 'umbra', name: 'UMBRA', role: 'Езо-психологія',portrait: '/umbra-portrait-1.png', accent: 'rgba(100,116,139,0.6)',pos: 'object-[50%_25%]' },
+packages/agents/umbra/assets/umbra-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\apps\web\src\app\mages\mages-data.ts:134 portrait: '/umbra-portrait-1.png',
+packages/agents/umbra/assets/umbra-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\umbra\assets\README.md:7 | `umbra-portrait-1.png` | Портрет UMBRA з дзеркалом, чорний топ + сіра спідниця, MORA на плечі | ✅ еталон |
+packages/agents/umbra/assets/umbra-portrait-1.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\umbra\assets\README.md:12 ### Портрет (umbra-portrait-1.png)
+packages/agents/umbra/assets/umbra-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\umbra\assets\README.md:8 | `umbra-room.png` | Кімната UMBRA — мінімалізм, велике дзеркало, готичне склепіння, символи на стіні, прозорий фон | ✅ еталон |
+packages/agents/umbra/assets/umbra-room.png	C:\Users\shemc\myVSCodeProjects\lumara\packages\agents\umbra\assets\README.md:22 ### Кімната (umbra-room.png)
+select-app-dropdown.jpeg	NOT_USED
+token-created.jpeg	NOT_USED
+token-done.jpeg	NOT_USED
+token-expiry.jpeg	NOT_USED
+token-expiry2.jpeg	NOT_USED
+token-generated.jpeg	NOT_USED
+token-permissions.jpeg	NOT_USED

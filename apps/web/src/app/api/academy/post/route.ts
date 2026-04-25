@@ -281,7 +281,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ ok: true, day, result, timestamp: new Date().toISOString() })
   } catch (error) {
-    console.error(`Academy post failed (${day}):`, error)
+
     const message = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }

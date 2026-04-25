@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       message: 'Supabase is alive',
     })
   } catch (error) {
-    console.error('Health check failed:', error)
+
     return NextResponse.json({ ok: false, error: 'DB unreachable' }, { status: 500 })
   }
 }

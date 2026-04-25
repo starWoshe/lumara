@@ -74,7 +74,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       role: newUser.role,
     }
   } catch (err) {
-    console.error('[auth] помилка getSessionUser:', err)
+
     // Якщо create впав — спробуємо знайти користувача ще раз
     const fallbackUser = await db.user.findUnique({ where: { id: user.id } })
       .catch(() => null)

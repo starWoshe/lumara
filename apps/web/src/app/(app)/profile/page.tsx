@@ -57,7 +57,7 @@ export default function ProfilePage() {
         body: JSON.stringify(form),
       })
       const data = await res.json()
-      console.log('[profile] відповідь сервера:', data)
+
       if (!res.ok) {
         alert('Помилка збереження: ' + (data.details || data.error || 'невідома помилка'))
       } else if (data.error) {
@@ -78,7 +78,7 @@ export default function ProfilePage() {
         }
       }
     } catch (err) {
-      console.error('[profile] помилка відправки:', err)
+
       alert('Не вдалося зберегти профіль. Перевір консоль.')
     } finally {
       setSaving(false)

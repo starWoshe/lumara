@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.redirect(portalSession.url)
   } catch (error) {
-    console.error('[stripe/portal]', error)
+
     return NextResponse.json({ error: String(error) }, { status: 500 })
   }
 }

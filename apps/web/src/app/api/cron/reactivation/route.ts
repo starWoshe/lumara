@@ -73,7 +73,7 @@ export async function GET(request: Request) {
 
         sent++
       } catch (err) {
-        console.error(`[reactivation] Помилка надсилання для ${user.email}:`, err)
+
         failed++
       }
     }
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
       timestamp: now.toISOString(),
     })
   } catch (error) {
-    console.error('[reactivation] Помилка cron:', error)
+
     return NextResponse.json({ ok: false, error: String(error) }, { status: 500 })
   }
 }
