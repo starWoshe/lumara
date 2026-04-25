@@ -4,18 +4,20 @@ import { db } from '@lumara/database'
 import { z } from 'zod'
 
 const profileSchema = z.object({
-  fullName:  z.string().max(200).optional().nullable(),
-  gender:    z.string().max(50).optional().nullable(),
-  birthDate: z.string().optional().nullable(),
-  birthTime: z.string().optional().nullable(),
+  fullName:   z.string().max(200).optional().nullable(),
+  gender:     z.string().max(50).optional().nullable(),
+  birthDate:  z.string().optional().nullable(),
+  birthTime:  z.string().optional().nullable(),
   birthPlace: z.string().max(200).optional().nullable(),
-  goal:      z.string().max(500).optional().nullable(),
+  goal:       z.string().max(500).optional().nullable(),
 })
 
 export async function GET() {
   const session = await getSessionUser()
   console.log('[profile GET] session:', session)
-  if (!session?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   const profile = await db.profile.findUnique({ where: { userId: session.id } })
   console.log('[profile GET] profile:', profile)
@@ -23,42 +25,58 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  const session = await getSessionUser()
-  if (!session?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const session = await getSessionUser()
+    console.log('[profile PATCH] session:', session)
+    if (!session?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-  const body = await req.json()
-  const data = profileSchema.parse(body)
+    const body = await req.json()
+    console.log('[profile PATCH] body:', body)
 
-  // Нормалізуємо порожні рядки в null — користувачі можуть очищати поля
-  const fullName = data.fullName?.trim() || null
-  const gender = data.gender?.trim() || null
-  const birthDate = data.birthDate?.trim() ? new Date(data.birthDate.trim()) : null
-  const birthTime = data.birthTime?.trim() || null
-  const birthPlace = data.birthPlace?.trim() || null
-  const goal = data.goal?.trim() || null
+    const data = profileSchema.parse(body)
 
-  const profile = await db.profile.upsert({
-    where: { userId: session.id },
-    update: {
-      fullName,
-      gender,
-      birthDate,
-      birthTime,
-      birthPlace,
-      goal,
-    },
-    create: {
-      userId: session.id,
-      fullName,
-      gender,
-      birthDate,
-      birthTime,
-      birthPlace,
-      goal,
-      language: 'uk',
-      timezone: 'Europe/Kiev',
-    },
-  })
+    // Нормалізуємо порожні рядки в null — користувачі можуть очищати поля
+    const fullName   = data.fullName?.trim()  || null
+    const gender     = data.gender?.trim()    || null
+    const birthTime  = data.birthTime?.trim() || null
+    const birthPlace = data.birthPlace?.trim()|| null
+    const goal       = data.goal?.trim()      || null
 
-  return NextResponse.json(profile)
+    // birthDate валідуємо окремо, щоб уникнути Invalid Date
+    let birthDate: Date | null = null
+    const birthDateStr = data.birthDate?.trim()
+    if (birthDateStr) {
+      const d = new Date(birthDateStr)
+      if (!isNaN(d.getTime())) {
+        birthDate = d
+      }
+    }
+
+    console.log('[profile PATCH] normalized:', { fullName, gender, birthDate, birthTime, birthPlace, goal })
+
+    const profile = await db.profile.upsert({
+      where: { userId: session.id },
+      update: { fullName, gender, birthDate, birthTime, birthPlace, goal },
+      create: {
+        userId: session.id,
+        fullName,
+        gender,
+        birthDate,
+        birthTime,
+        birthPlace,
+        goal,
+        language: 'uk',
+        timezone: 'Europe/Kiev',
+      },
+    })
+
+    console.log('[profile PATCH] saved:', profile)
+    return NextResponse.json(profile)
+  } catch (err: unknown) {
+    console.error('[profile PATCH] помилка:', err)
+    const message = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: 'Server error', details: message }, { status: 500 })
+  }
 }
