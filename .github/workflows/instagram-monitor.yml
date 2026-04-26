@@ -1,4 +1,4 @@
-name: Instagram Comment Monitor
+name: Instagram + Facebook Comment Monitor
 
 on:
   schedule:
@@ -11,7 +11,7 @@ env:
 
 jobs:
   monitor-instagram-comments:
-    name: Моніторинг коментарів Instagram
+    name: Моніторинг коментарів Instagram та Facebook
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -30,7 +30,7 @@ jobs:
         run: |
           pip install -r packages/agents/scripts/requirements.txt
 
-      - name: Запустити Instagram моніторинг
+      - name: Запустити Instagram та Facebook моніторинг
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
@@ -41,6 +41,11 @@ jobs:
           NUMI_IG_USER_ID: ${{ secrets.NUMI_IG_USER_ID }}
           UMBRA_IG_USER_ID: ${{ secrets.UMBRA_IG_USER_ID }}
           INSTAGRAM_MAX_PER_DAY: ${{ secrets.INSTAGRAM_MAX_PER_DAY || '20' }}
+          LUNA_FB_PAGE_ID: ${{ secrets.LUNA_FB_PAGE_ID }}
+          ARCAS_FB_PAGE_ID: ${{ secrets.ARCAS_FB_PAGE_ID }}
+          NUMI_FB_PAGE_ID: ${{ secrets.NUMI_FB_PAGE_ID }}
+          UMBRA_FB_PAGE_ID: ${{ secrets.UMBRA_FB_PAGE_ID }}
+          FACEBOOK_MAX_PER_DAY: ${{ secrets.FACEBOOK_MAX_PER_DAY || '15' }}
         run: |
           python packages/agents/scripts/instagram_comment_monitor.py
 
