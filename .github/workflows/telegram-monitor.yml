@@ -2,7 +2,8 @@ name: Telegram Group Monitor
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    # Частота: ~кожні 2 години. Змінити значення нижче щоб регулювати інтервал
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 env:
