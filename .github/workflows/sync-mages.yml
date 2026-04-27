@@ -23,6 +23,7 @@ jobs:
             page_access_token_secret: LUNA_PAGE_ACCESS_TOKEN
             page_id_secret: LUNA_PAGE_ID
             telegram_channel_id_secret: LUNA_TELEGRAM_CHANNEL_ID
+            telegram_bot_token_secret: LUNA_TELEGRAM_BOT_TOKEN
           - mage: arcas
             repo: arcaslumara-max/lumara
             token_secret: ARCAS_GITHUB_TOKEN
@@ -32,6 +33,7 @@ jobs:
             page_access_token_secret: ARCAS_PAGE_ACCESS_TOKEN
             page_id_secret: ARCAS_PAGE_ID
             telegram_channel_id_secret: ARCAS_TELEGRAM_CHANNEL_ID
+            telegram_bot_token_secret: ARCAS_TELEGRAM_BOT_TOKEN
           - mage: numi
             repo: numilumara-design/lumara
             token_secret: NUMI_GITHUB_TOKEN
@@ -41,6 +43,7 @@ jobs:
             page_access_token_secret: NUMI_PAGE_ACCESS_TOKEN
             page_id_secret: NUMI_PAGE_ID
             telegram_channel_id_secret: NUMI_TELEGRAM_CHANNEL_ID
+            telegram_bot_token_secret: NUMI_TELEGRAM_BOT_TOKEN
           - mage: umbra
             repo: umbralumara-oss/lumara
             token_secret: UMBRA_GITHUB_TOKEN
@@ -50,6 +53,7 @@ jobs:
             page_access_token_secret: UMBRA_PAGE_ACCESS_TOKEN
             page_id_secret: UMBRA_PAGE_ID
             telegram_channel_id_secret: UMBRA_TELEGRAM_CHANNEL_ID
+            telegram_bot_token_secret: UMBRA_TELEGRAM_BOT_TOKEN
 
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -294,6 +298,7 @@ WFEOF
           set_secret "${MAGE^^}_PAGE_ID" "${{ secrets[matrix.page_id_secret] }}"
           set_secret "${MAGE^^}_TELEGRAM_CHANNEL_ID" "${{ secrets[matrix.telegram_channel_id_secret] }}"
           set_secret "TELEGRAM_BOT_TOKEN" "${{ secrets.TELEGRAM_BOT_TOKEN }}"
+          set_secret "${MAGE^^}_TELEGRAM_BOT_TOKEN" "${{ secrets[matrix.telegram_bot_token_secret] }}"
           set_secret "SUPABASE_URL" "${{ secrets.SUPABASE_URL }}"
           set_secret "SUPABASE_SERVICE_ROLE_KEY" "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
           set_secret "INSTAGRAM_MAX_PER_DAY" "${{ secrets.INSTAGRAM_MAX_PER_DAY || '20' }}"
