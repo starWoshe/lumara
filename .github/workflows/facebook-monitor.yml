@@ -2,8 +2,8 @@ name: Facebook Comment Monitor
 
 on:
   schedule:
-    # Частота: кожну непарну годину (зі зміщенням від Instagram)
-    - cron: '0 1,3,5,7,9,11,13,15,17,19,21,23 * * *'
+    # Частота: щогодини, зміщено на 30 хв від Instagram
+    - cron: '30 * * * *'
   workflow_dispatch:
 
 env:
