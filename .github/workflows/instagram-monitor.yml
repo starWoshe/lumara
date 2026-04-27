@@ -2,8 +2,8 @@ name: Instagram Comment Monitor
 
 on:
   schedule:
-    # Частота: кожні 6 годин. Змінити значення нижче щоб регулювати інтервал
-    - cron: '0 */6 * * *'
+    # Частота: кожні 2 години
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 env:

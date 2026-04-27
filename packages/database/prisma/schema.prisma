@@ -469,3 +469,42 @@ model TelegramGroup {
   @@index([lastActivityAt])
   @@map("telegram_groups")
 }
+
+// =========================================
+// СПІЛЬНА ПАМ'ЯТЬ МАГІВ (User Context)
+// =========================================
+
+model UserContext {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  mage              AgentType
+  platform          String    // TELEGRAM, INSTAGRAM, FACEBOOK, WEB
+  lastTopic         String?   @map("last_topic")
+  artifactHintShown Boolean   @default(false) @map("artifact_hint_shown")
+  messageCount      Int       @default(0) @map("message_count")
+  lastInteraction   DateTime  @updatedAt @map("last_interaction")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@unique([userId, mage, platform])
+  @@index([userId])
+  @@index([mage])
+  @@map("user_context")
+}
+
+// =========================================
+// TELEGRAM WEBHOOK РОЗМОВИ
+// =========================================
+
+model TelegramConversation {
+  id        String    @id @default(uuid())
+  chatId    String    @map("chat_id")
+  mage      AgentType
+  messages  Json      // [{role: 'user'|'assistant', content: string, createdAt: string}]
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@unique([chatId, mage])
+  @@index([chatId])
+  @@index([mage])
+  @@map("telegram_conversations")
+}

@@ -1,0 +1,302 @@
+name: Sync Mage Repositories
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync code and secrets to mage repos
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mage: luna
+            repo: lunalumarafyi-lab/lumara
+            token_secret: LUNA_GITHUB_TOKEN
+            daily_cron: '0 19 * * *'
+            ig_user_id_secret: LUNA_IG_USER_ID
+            fb_page_id_secret: LUNA_FB_PAGE_ID
+            page_access_token_secret: LUNA_PAGE_ACCESS_TOKEN
+            page_id_secret: LUNA_PAGE_ID
+            telegram_channel_id_secret: LUNA_TELEGRAM_CHANNEL_ID
+          - mage: arcas
+            repo: arcaslumara-max/lumara
+            token_secret: ARCAS_GITHUB_TOKEN
+            daily_cron: '0 5 * * *'
+            ig_user_id_secret: ARCAS_IG_USER_ID
+            fb_page_id_secret: ARCAS_FB_PAGE_ID
+            page_access_token_secret: ARCAS_PAGE_ACCESS_TOKEN
+            page_id_secret: ARCAS_PAGE_ID
+            telegram_channel_id_secret: ARCAS_TELEGRAM_CHANNEL_ID
+          - mage: numi
+            repo: numilumara-design/lumara
+            token_secret: NUMI_GITHUB_TOKEN
+            daily_cron: '0 10 * * *'
+            ig_user_id_secret: NUMI_IG_USER_ID
+            fb_page_id_secret: NUMI_FB_PAGE_ID
+            page_access_token_secret: NUMI_PAGE_ACCESS_TOKEN
+            page_id_secret: NUMI_PAGE_ID
+            telegram_channel_id_secret: NUMI_TELEGRAM_CHANNEL_ID
+          - mage: umbra
+            repo: umbralumara-oss/lumara
+            token_secret: UMBRA_GITHUB_TOKEN
+            daily_cron: '0 16 * * *'
+            ig_user_id_secret: UMBRA_IG_USER_ID
+            fb_page_id_secret: UMBRA_FB_PAGE_ID
+            page_access_token_secret: UMBRA_PAGE_ACCESS_TOKEN
+            page_id_secret: UMBRA_PAGE_ID
+            telegram_channel_id_secret: UMBRA_TELEGRAM_CHANNEL_ID
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets[matrix.token_secret] }}
+        run: |
+          gh auth status || true
+
+      - name: Sync files to ${{ matrix.repo }}
+        env:
+          GH_TOKEN: ${{ secrets[matrix.token_secret] }}
+          REPO: ${{ matrix.repo }}
+          MAGE: ${{ matrix.mage }}
+        run: |
+          set -e
+          echo "📡 Syncing files to $REPO for mage $MAGE"
+
+          # ── Helper: upload file via GitHub API ──
+          upload_file() {
+            local src="$1"
+            local dst="$2"
+            local msg="$3"
+
+            if [ ! -r "$src" ]; then
+              echo "  ⚠️ Source not readable: $src"
+              return 0
+            fi
+
+            local content
+            content=$(base64 -w0 "$src")
+
+            local sha
+            sha=$(gh api "repos/$REPO/contents/$dst" --jq '.sha' 2>/dev/null || true)
+
+            local payload
+            if [ -n "$sha" ]; then
+              payload=$(jq -n \
+                --arg msg "$msg" \
+                --arg content "$content" \
+                --arg sha "$sha" \
+                '{message: $msg, content: $content, sha: $sha}')
+            else
+              payload=$(jq -n \
+                --arg msg "$msg" \
+                --arg content "$content" \
+                '{message: $msg, content: $content}')
+            fi
+
+            gh api "repos/$REPO/contents/$dst" --method PUT --input - <<< "$payload"
+            echo "  ✅ Uploaded $dst"
+          }
+
+          # ── Shared scripts ──
+          upload_file "packages/agents/scripts/instagram_comment_monitor.py" \
+            "packages/agents/scripts/instagram_comment_monitor.py" \
+            "sync: instagram comment monitor"
+
+          upload_file "packages/agents/scripts/requirements.txt" \
+            "packages/agents/scripts/requirements.txt" \
+            "sync: monitor requirements"
+
+          upload_file "packages/agents/shared/meta_publisher.py" \
+            "packages/agents/shared/meta_publisher.py" \
+            "sync: meta publisher"
+
+          # ── Mage-specific daily bot scripts ──
+          upload_file "packages/agents/$MAGE/scripts/daily_bot.py" \
+            "packages/agents/$MAGE/scripts/daily_bot.py" \
+            "sync: daily bot"
+
+          if [ -f "packages/agents/$MAGE/scripts/requirements.txt" ]; then
+            upload_file "packages/agents/$MAGE/scripts/requirements.txt" \
+              "packages/agents/$MAGE/scripts/requirements.txt" \
+              "sync: daily bot requirements"
+          fi
+
+          if [ "$MAGE" = "luna" ] && [ -f "packages/agents/luna/scripts/astro_calendar.py" ]; then
+            upload_file "packages/agents/luna/scripts/astro_calendar.py" \
+              "packages/agents/luna/scripts/astro_calendar.py" \
+              "sync: astro calendar"
+          fi
+
+          # ── Generate workflow: instagram-monitor.yml ──
+          cat > /tmp/instagram-monitor.yml <<'WFEOF'
+name: Instagram Comment Monitor
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: packages/agents/scripts/requirements.txt
+      - run: pip install -r packages/agents/scripts/requirements.txt
+      - run: python packages/agents/scripts/instagram_comment_monitor.py
+        env:
+          MONITOR_PLATFORM: instagram
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          INSTAGRAM_MAX_PER_DAY: ${{ secrets.INSTAGRAM_MAX_PER_DAY || '20' }}
+          MAGE_IG_USER_ID: ${{ secrets.MAGE_IG_USER_ID }}
+WFEOF
+
+          sed -i "s/MAGE_IG_USER_ID/${{ matrix.ig_user_id_secret }}/g" /tmp/instagram-monitor.yml
+          upload_file /tmp/instagram-monitor.yml ".github/workflows/instagram-monitor.yml" "sync: instagram workflow"
+
+          # ── Generate workflow: facebook-monitor.yml ──
+          cat > /tmp/facebook-monitor.yml <<'WFEOF'
+name: Facebook Comment Monitor
+
+on:
+  schedule:
+    - cron: '0 1,3,5,7,9,11,13,15,17,19,21,23 * * *'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: packages/agents/scripts/requirements.txt
+      - run: pip install -r packages/agents/scripts/requirements.txt
+      - run: python packages/agents/scripts/instagram_comment_monitor.py
+        env:
+          MONITOR_PLATFORM: facebook
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FACEBOOK_MAX_PER_DAY: ${{ secrets.FACEBOOK_MAX_PER_DAY || '15' }}
+          MAGE_FB_PAGE_ID: ${{ secrets.MAGE_FB_PAGE_ID }}
+WFEOF
+
+          sed -i "s/MAGE_FB_PAGE_ID/${{ matrix.fb_page_id_secret }}/g" /tmp/facebook-monitor.yml
+          upload_file /tmp/facebook-monitor.yml ".github/workflows/facebook-monitor.yml" "sync: facebook workflow"
+
+          # ── Generate workflow: daily-post.yml ──
+          DAILY_CRON='${{ matrix.daily_cron }}'
+          MAGE_UPPER='${{ matrix.mage }}'
+          MAGE_UPPER="${MAGE_UPPER^^}"
+
+          # Telegram channel env name differs for LUNA vs others
+          if [ "$MAGE" = "luna" ]; then
+            TG_CHANNEL_LINE="TELEGRAM_CHANNEL_ID: \${{ secrets.LUNA_TELEGRAM_CHANNEL_ID }}"
+          else
+            TG_CHANNEL_LINE="${MAGE_UPPER}_TELEGRAM_CHANNEL_ID: \${{ secrets.${MAGE_UPPER}_TELEGRAM_CHANNEL_ID }}"
+          fi
+
+          cat > /tmp/daily-post.yml <<WFEOF
+name: Daily Post — ${MAGE_UPPER^}
+
+on:
+  schedule:
+    - cron: '$DAILY_CRON'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: packages/agents/$MAGE/scripts/requirements.txt
+      - run: pip install -r packages/agents/$MAGE/scripts/requirements.txt
+      - run: python packages/agents/$MAGE/scripts/daily_bot.py
+        env:
+          ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+          ${MAGE_UPPER}_PAGE_ACCESS_TOKEN: \${{ secrets.${MAGE_UPPER}_PAGE_ACCESS_TOKEN }}
+          ${MAGE_UPPER}_PAGE_ID: \${{ secrets.${MAGE_UPPER}_PAGE_ID }}
+          ${MAGE_UPPER}_IG_USER_ID: \${{ secrets.${MAGE_UPPER}_IG_USER_ID }}
+          IG_ACCESS_TOKEN: \${{ secrets.IG_ACCESS_TOKEN }}
+          TELEGRAM_BOT_TOKEN: \${{ secrets.TELEGRAM_BOT_TOKEN }}
+          $TG_CHANNEL_LINE
+WFEOF
+
+          upload_file /tmp/daily-post.yml ".github/workflows/daily-post.yml" "sync: daily post workflow"
+
+      - name: Sync secrets to ${{ matrix.repo }}
+        env:
+          GH_TOKEN: ${{ secrets[matrix.token_secret] }}
+          REPO: ${{ matrix.repo }}
+          MAGE: ${{ matrix.mage }}
+        run: |
+          set -e
+          echo "🔐 Syncing secrets to $REPO"
+
+          set_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -n "$value" ]; then
+              echo "$value" | gh secret set "$name" --repo "$REPO"
+              echo "  ✅ Secret $name set"
+            else
+              echo "  ⚠️ Secret $name is empty, skipping"
+            fi
+          }
+
+          set_secret "ANTHROPIC_API_KEY" "${{ secrets.ANTHROPIC_API_KEY }}"
+          set_secret "OPENAI_API_KEY" "${{ secrets.OPENAI_API_KEY }}"
+          set_secret "DATABASE_URL" "${{ secrets.DATABASE_URL }}"
+          set_secret "DIRECT_URL" "${{ secrets.DIRECT_URL }}"
+          set_secret "IG_ACCESS_TOKEN" "${{ secrets.IG_ACCESS_TOKEN }}"
+          set_secret "${MAGE^^}_IG_USER_ID" "${{ secrets[matrix.ig_user_id_secret] }}"
+          set_secret "${MAGE^^}_FB_PAGE_ID" "${{ secrets[matrix.fb_page_id_secret] }}"
+          set_secret "${MAGE^^}_PAGE_ACCESS_TOKEN" "${{ secrets[matrix.page_access_token_secret] }}"
+          set_secret "${MAGE^^}_PAGE_ID" "${{ secrets[matrix.page_id_secret] }}"
+          set_secret "${MAGE^^}_TELEGRAM_CHANNEL_ID" "${{ secrets[matrix.telegram_channel_id_secret] }}"
+          set_secret "TELEGRAM_BOT_TOKEN" "${{ secrets.TELEGRAM_BOT_TOKEN }}"
+          set_secret "SUPABASE_URL" "${{ secrets.SUPABASE_URL }}"
+          set_secret "SUPABASE_SERVICE_ROLE_KEY" "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          set_secret "INSTAGRAM_MAX_PER_DAY" "${{ secrets.INSTAGRAM_MAX_PER_DAY || '20' }}"
+          set_secret "FACEBOOK_MAX_PER_DAY" "${{ secrets.FACEBOOK_MAX_PER_DAY || '15' }}"
+
+          echo "✅ Secrets synced to $REPO"
