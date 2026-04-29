@@ -58,40 +58,18 @@ jobs:
         run: |
           if [ -f "packages/database/supabase-migration.sql" ]; then
             echo "Applying supabase-migration.sql..."
-            cd packages/database && node --dns-result-order=ipv4first -e "
-              const { Client } = require('pg');
-              const fs = require('fs');
-              const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
-              client.connect().then(() => {
-                const sql = fs.readFileSync('supabase-migration.sql', 'utf8');
-                return client.query(sql);
-              }).then(() => {
-                console.log('Schema SQL applied');
-                client.end();
-              }).catch(err => {
-                console.error('Migration error:', err.message);
-                console.warn('Apply manually in Supabase SQL Editor if needed.');
-              });
-            "
+            psql "$DATABASE_URL" -f packages/database/supabase-migration.sql
+            echo "Schema SQL applied"
+          else
+            echo "supabase-migration.sql not found, skipping"
           fi
 
       - name: Apply Supabase RLS Policies
         run: |
           if [ -f "packages/database/rls-policies.sql" ]; then
             echo "Applying rls-policies.sql..."
-            cd packages/database && node --dns-result-order=ipv4first -e "
-              const { Client } = require('pg');
-              const fs = require('fs');
-              const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
-              client.connect().then(() => {
-                const sql = fs.readFileSync('rls-policies.sql', 'utf8');
-                return client.query(sql);
-              }).then(() => {
-                console.log('RLS policies applied');
-                client.end();
-              }).catch(err => {
-                console.error('RLS error:', err.message);
-                console.warn('Apply manually in Supabase SQL Editor if needed.');
-              });
-            "
+            psql "$DATABASE_URL" -f packages/database/rls-policies.sql
+            echo "RLS policies applied"
+          else
+            echo "rls-policies.sql not found, skipping"
           fi
