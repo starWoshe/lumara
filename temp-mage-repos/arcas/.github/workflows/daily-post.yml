@@ -28,5 +28,5 @@ jobs:
           ARCAS_PAGE_ID: ${{ secrets.ARCAS_PAGE_ID }}
           ARCAS_IG_USER_ID: ${{ secrets.ARCAS_IG_USER_ID }}
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          ARCAS_TELEGRAM_BOT_TOKEN: ${{ secrets.ARCAS_TELEGRAM_BOT_TOKEN }}
           ARCAS_TELEGRAM_CHANNEL_ID: ${{ secrets.ARCAS_TELEGRAM_CHANNEL_ID }}

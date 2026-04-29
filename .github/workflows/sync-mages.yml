@@ -187,6 +187,7 @@ jobs:
           set_secret "${MAGE^^}_TELEGRAM_CHANNEL_ID" "${{ secrets[matrix.telegram_channel_id_secret] }}"
           set_secret "TELEGRAM_BOT_TOKEN" "${{ secrets.TELEGRAM_BOT_TOKEN }}"
           set_secret "${MAGE^^}_TELEGRAM_BOT_TOKEN" "${{ secrets[matrix.telegram_bot_token_secret] }}"
+          set_secret "LUMARA_TELEGRAM_CHANNEL_ID" "${{ secrets.LUMARA_TELEGRAM_CHANNEL_ID }}"
           set_secret "SUPABASE_URL" "${{ secrets.SUPABASE_URL }}"
           set_secret "SUPABASE_SERVICE_ROLE_KEY" "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
           set_secret "INSTAGRAM_MAX_PER_DAY" "${{ secrets.INSTAGRAM_MAX_PER_DAY || '20' }}"
