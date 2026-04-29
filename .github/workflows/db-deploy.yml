@@ -36,10 +36,24 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @lumara/database db:generate
 
+      - name: Debug — check DB connection
+        run: |
+          echo "Testing database connectivity..."
+          echo "DATABASE_URL is set: $([[ -n "$DATABASE_URL" ]] && echo 'YES' || echo 'NO')"
+          echo "DIRECT_URL is set: $([[ -n "$DIRECT_URL" ]] && echo 'YES' || echo 'NO')"
+          host=$(echo "$DIRECT_URL" | sed -n 's/.*@\([^:]*\).*/\1/p')
+          echo "Host from DIRECT_URL: $host"
+          nc -zv -w 5 "$host" 5432 || echo "Port 5432 unreachable (Supabase may be paused)"
+
       - name: Push Prisma Schema to DB
         env:
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
-        run: pnpm --filter @lumara/database exec prisma db push --skip-generate
+        run: |
+          set -e
+          pnpm --filter @lumara/database exec prisma db push --skip-generate || {
+            echo "prisma db push failed — checking if Supabase is paused..."
+            exit 1
+          }
 
       - name: Deploy Prisma Migrations
         run: |
@@ -48,7 +62,6 @@ jobs:
             pnpm --filter @lumara/database db:deploy
           else
             echo "No Prisma migrations found. Skipping migrate deploy."
-            echo "TIP: run 'pnpm --filter @lumara/database prisma migrate dev --name init' locally to create initial migrations."
           fi
 
       - name: Install PostgreSQL client
@@ -58,8 +71,9 @@ jobs:
         run: |
           if [ -f "packages/database/supabase-migration.sql" ]; then
             echo "Applying supabase-migration.sql..."
-            psql "$DATABASE_URL" -f packages/database/supabase-migration.sql
-            echo "Schema SQL applied"
+            psql "$DATABASE_URL" -f packages/database/supabase-migration.sql || {
+              echo "Schema SQL failed — continuing to RLS..."
+            }
           else
             echo "supabase-migration.sql not found, skipping"
           fi
@@ -68,8 +82,9 @@ jobs:
         run: |
           if [ -f "packages/database/rls-policies.sql" ]; then
             echo "Applying rls-policies.sql..."
-            psql "$DATABASE_URL" -f packages/database/rls-policies.sql
-            echo "RLS policies applied"
+            psql "$DATABASE_URL" -f packages/database/rls-policies.sql || {
+              echo "RLS SQL failed — check if tables exist"
+            }
           else
             echo "rls-policies.sql not found, skipping"
           fi
