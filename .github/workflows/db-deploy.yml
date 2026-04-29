@@ -38,7 +38,7 @@ jobs:
 
       - name: Push Prisma Schema to DB
         env:
-          DIRECT_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
         run: pnpm --filter @lumara/database exec prisma db push --skip-generate
 
       - name: Deploy Prisma Migrations

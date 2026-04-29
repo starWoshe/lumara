@@ -1,5 +1,6 @@
 // Prisma схема для LUMARA Academy
 // Документація: https://pris.ly/d/prisma-schema
+// Тригер db-deploy: створення відсутніх таблиць та RLS
 
 generator client {
   provider      = "prisma-client-js"
