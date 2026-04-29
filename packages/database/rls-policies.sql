@@ -222,7 +222,67 @@ CREATE POLICY "token_usage: власний перегляд"
 -- RLS заблокує будь-який прямий доступ через anon/authenticated
 
 -- ──────────────────────────────────────────────────────────────────────────────
--- 17. verification_tokens (NextAuth — тільки через backend)
+-- 17. outreach_responses (тільки backend/admin — жодних публічних політик)
+-- ──────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE "outreach_responses" ENABLE ROW LEVEL SECURITY;
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 18. referral_clicks (anon може створювати для трекінгу)
+-- ──────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE "referral_clicks" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "referral_clicks: anon insert" ON "referral_clicks";
+CREATE POLICY "referral_clicks: anon insert"
+  ON "referral_clicks" FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 19. announcement_states (власний перегляд)
+-- ──────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE "announcement_states" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "announcement_states: власний перегляд" ON "announcement_states";
+CREATE POLICY "announcement_states: власний перегляд"
+  ON "announcement_states" FOR SELECT
+  TO authenticated
+  USING (auth.uid()::text = user_id::text);
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 20. monitor_states (тільки backend)
+-- ──────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE "monitor_states" ENABLE ROW LEVEL SECURITY;
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 21. telegram_groups (тільки backend/admin)
+-- ──────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE "telegram_groups" ENABLE ROW LEVEL SECURITY;
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 22. user_context (власний перегляд)
+-- ──────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE "user_context" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "user_context: власний перегляд" ON "user_context";
+CREATE POLICY "user_context: власний перегляд"
+  ON "user_context" FOR SELECT
+  TO authenticated
+  USING (auth.uid()::text = user_id::text);
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 23. telegram_conversations (тільки backend — webhook від бота)
+-- ──────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE "telegram_conversations" ENABLE ROW LEVEL SECURITY;
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- 24. verification_tokens (NextAuth — тільки через backend)
 -- ──────────────────────────────────────────────────────────────────────────────
 -- Немає user_id, тому доступ тільки через service_role (Prisma)
 -- Жодних публічних політик — RLS блокує прямий доступ
