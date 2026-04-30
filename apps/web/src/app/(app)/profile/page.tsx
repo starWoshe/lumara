@@ -10,6 +10,8 @@ interface ProfileData {
   birthTime: string | null
   birthPlace: string | null
   goal:      string | null
+  academyDisclosureLevel: number
+  academyRevealedBy: string[]
 }
 
 const GENDER_OPTIONS = [
@@ -23,6 +25,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const [form, setForm] = useState<ProfileData>({
     fullName: '', gender: '', birthDate: '', birthTime: '', birthPlace: '', goal: '',
+    academyDisclosureLevel: 0, academyRevealedBy: [],
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -40,6 +43,8 @@ export default function ProfilePage() {
             birthTime: data.birthTime ?? '',
             birthPlace: data.birthPlace ?? '',
             goal:      data.goal      ?? '',
+            academyDisclosureLevel: data.academyDisclosureLevel ?? 0,
+            academyRevealedBy: Array.isArray(data.academyRevealedBy) ? data.academyRevealedBy : [],
           })
         }
         setLoading(false)
@@ -74,6 +79,8 @@ export default function ProfilePage() {
             birthTime: data.birthTime ?? '',
             birthPlace: data.birthPlace ?? '',
             goal:      data.goal      ?? '',
+            academyDisclosureLevel: data.academyDisclosureLevel ?? 0,
+            academyRevealedBy: Array.isArray(data.academyRevealedBy) ? data.academyRevealedBy : [],
           })
         }
       }
@@ -173,18 +180,25 @@ export default function ProfilePage() {
           />
         </div>
 
-        {/* Основний запит */}
-        <div>
-          <label className="block text-sm font-medium text-white/70 mb-2">
-            З чим ти до нас прийшов? <span className="text-white/30 font-normal">(необов&apos;язково)</span>
-          </label>
-          <textarea
-            value={form.goal ?? ''}
-            onChange={(e) => setForm({ ...form, goal: e.target.value })}
-            placeholder="Наприклад: хочу зрозуміти свою місію, шукаю ясності у відносинах, цікавлюсь самопізнанням..."
-            rows={3}
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-lumara-400/50 transition-colors resize-none"
-          />
+        {/* Прогрес-бар точності */}
+        <div className="border border-white/10 rounded-xl p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-white/80">Точність передбачень</span>
+            <span className="text-sm font-bold text-lumara-300">
+              {Math.min(100, 40 + (form.birthDate ? 20 : 0) + (form.birthTime ? 20 : 0) + (form.birthPlace ? 20 : 0))}%
+            </span>
+          </div>
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-lumara-500 to-gold-400 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, 40 + (form.birthDate ? 20 : 0) + (form.birthTime ? 20 : 0) + (form.birthPlace ? 20 : 0))}%` }}
+            />
+          </div>
+          <div className="text-xs text-white/40 space-y-1">
+            <p className={form.birthDate ? 'text-green-400/80' : ''}>• Дата народження — {form.birthDate ? '✓ +20%' : 'додай для точності'}</p>
+            <p className={form.birthTime ? 'text-green-400/80' : ''}>• Час народження — {form.birthTime ? '✓ +20%' : 'додай для точності'}</p>
+            <p className={form.birthPlace ? 'text-green-400/80' : ''}>• Місце народження — {form.birthPlace ? '✓ +20%' : 'додай для точності'}</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-4 pt-2">

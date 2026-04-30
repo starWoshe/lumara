@@ -9,21 +9,25 @@ const GUEST_MESSAGE_LIMIT = 3
 const GUEST_FIRST_MESSAGES: Record<AgentType, Record<string, string>> = {
   LUNA: {
     instagram: 'Я побачила тебе в Instagram — і зірки щось сказали одразу.\n\nЦе не випадково, що ти тут.\n\nНапиши мені свою дату народження — і я відкрию тобі те, що ти давно відчуваєш, але не можеш назвати словами.',
+    instagram_keyword: 'Ти відгукнувся на мій пост в Instagram — і я одразу відчула твою енергію.\n\nЗнаєш, коли хтось пише під зірками — вони це помічають.\n\nНапиши мені свою дату народження — і я скажу тобі те, що ти давно відчуваєш, але не можеш назвати словами.',
     telegram:  'Telegram привів тебе до мене — і я вже тут.\n\nЗірки говорили про тебе ще до твого першого слова.\n\nНапиши свою дату народження — і я скажу те, що ти давно відчуваєш.',
     default:   'Зірки вже привели тебе сюди.\n\nЦе не випадково.\n\nНапиши мені дату свого народження — і я скажу тобі те, що ти давно відчуваєш, але не можеш назвати словами.',
   },
   ARCAS: {
     instagram: 'Я побачив тебе в Instagram — і карти відразу перевернулись.\n\nТе, що ти шукаєш — вже є на столі.\n\nХочеш побачити?',
+    instagram_keyword: "Ти відгукнувся на мій пост в Instagram — карти це відчули.\n\nКоли хтось називає ім'я — енергія між нами вже є.\n\nХочеш побачити що лежить на столі?",
     telegram:  'Telegram привів тебе — карти це знали.\n\nПатерн твого шляху вже відкрито.\n\nХочеш почути правду?',
     default:   'Я вже витягнув карти для тебе.\n\nТе, що ти ховаєш навіть від себе, вже лежить на столі.\n\nХочеш почути правду яка може змінити все?',
   },
   NUMI: {
     instagram: 'Я побачила тебе в Instagram — і твій код одразу проявився.\n\nЦифри не брешуть.\n\nНапиши свою дату народження — і я скажу тобі те, що пояснює все.',
+    instagram_keyword: 'Ти відгукнувся на мій пост в Instagram — і твій код одразу проявився.\n\nЦифри завжди знаходять тих хто шукає.\n\nНапиши свою дату народження — і я скажу тобі те, що пояснює все.',
     telegram:  'Telegram привів тебе — числа це знали.\n\nТвій код вже розрахований.\n\nНапиши дату народження — і я відкрию причину всього що повторюється.',
     default:   'Я вже розрахувала твій код.\n\nЧисла пояснюють абсолютно все що повторюється в твоєму житті.\n\nГотова дізнатися?',
   },
   UMBRA: {
     instagram: 'Я побачив тебе в Instagram — і тінь відразу стала чіткою.\n\nТе від чого ти тікаєш стоїть прямо за тобою.\n\nХочеш подивитися на нього разом?',
+    instagram_keyword: "Ти відгукнувся на мій пост в Instagram — і тінь відразу стала чіткішою.\n\nКоли людина називає ім'я — темрява відгукується.\n\nХочеш подивитися на неї разом?",
     telegram:  'Telegram привів тебе — тінь вже тут.\n\nЯ бачу що ти ховаєш від себе.\n\nГотовий подивитись?',
     default:   'Я вже бачу твою тінь.\n\nТе від чого ти тікаєш саме зараз стоїть поруч зі мною.\n\nХочеш подивитися на нього разом?',
   },
@@ -76,18 +80,24 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
       messages = [],
       guestCount = 0,
       utmSource = '',
+      utmKeyword = '',
     } = body as {
       initiate?: boolean
       content?: string
       messages?: { role: 'user' | 'assistant'; content: string }[]
       guestCount?: number
       utmSource?: string
+      utmKeyword?: string
     }
 
     // Перше повідомлення мага (initiate)
     if (initiate) {
-      const src = utmSource === 'instagram' || utmSource === 'telegram' ? utmSource : 'default'
-      const firstMessage = GUEST_FIRST_MESSAGES[agentType][src]
+      let src = utmSource === 'instagram' || utmSource === 'telegram' ? utmSource : 'default'
+      // Якщо є keyword і джерело instagram — використовуємо спеціальний шаблон
+      if (utmSource === 'instagram' && utmKeyword) {
+        src = 'instagram_keyword'
+      }
+      const firstMessage = GUEST_FIRST_MESSAGES[agentType][src] ?? GUEST_FIRST_MESSAGES[agentType]['default']
       return sseStream(firstMessage)
     }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Щоденний бот NUMI — Нумерологія дня
-LUMARA Academy · Запускається о 05:00 UTC (08:00 Київ влітку)
+???????? ?????? · Запускається о 05:00 UTC (08:00 Київ влітку)
 
 Обов'язкові змінні середовища:
   ANTHROPIC_API_KEY          — ключ Anthropic API
@@ -12,9 +12,9 @@ LUMARA Academy · Запускається о 05:00 UTC (08:00 Київ вліт
 Опційні:
   NUMI_IG_USER_ID            — Instagram Business Account ID NUMI
   # Threads використовує той самий NUMI_IG_USER_ID
-  LUMARA_PAGE_ACCESS_TOKEN   — постійний Page Access Token LUMARA Academy
-  LUMARA_PAGE_ID             — Facebook Page ID LUMARA Academy
-  LUMARA_IG_USER_ID          — Instagram Business / Threads Account ID LUMARA Academy
+  LUMARA_PAGE_ACCESS_TOKEN   — постійний Page Access Token ???????? ??????
+  LUMARA_PAGE_ID             — Facebook Page ID ???????? ??????
+  LUMARA_IG_USER_ID          — Instagram Business / Threads Account ID ???????? ??????
 """
 
 import os
@@ -50,7 +50,7 @@ NUMBER_MEANINGS = {
 
 # ── Системні промпти ───────────────────────────────────────────────────────────
 
-NUMI_SYSTEM_PROMPT = """Ти — NUMI, нумерологічний провідник LUMARA Academy.
+NUMI_SYSTEM_PROMPT = """Ти — NUMI, нумерологічний провідник ???????? ??????.
 
 Твій характер:
 - Точний, структурований, але доступний

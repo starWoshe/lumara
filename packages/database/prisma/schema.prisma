@@ -135,6 +135,8 @@ model Profile {
   language         String    @default("uk")
   timezone         String    @default("Europe/Kiev")
   lastVisitedAgent AgentType? @map("last_visited_agent")
+  academyDisclosureLevel Int       @default(0) @map("academy_disclosure_level")
+  academyRevealedBy Json      @default("[]") @map("academy_revealed_by")
   tenantId         String?   @map("tenant_id")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
@@ -407,6 +409,21 @@ model ReferralClick {
   @@index([source, createdAt])
   @@index([agentType])
   @@map("referral_clicks")
+}
+
+model KeywordClick {
+  id        String    @id @default(uuid())
+  keyword   String
+  agent     String?
+  url       String
+  source    String?
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([keyword])
+  @@index([createdAt])
+  @@map("keyword_clicks")
 }
 
 model AdminSetting {

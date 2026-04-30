@@ -48,18 +48,75 @@ export function getGlobalSystemPrompt(): string {
   return globalSystemPrompt
 }
 
+function getAcademyContext(
+  disclosureLevel = 0,
+  revealedBy: string[] = []
+): string {
+  return globalSystemPrompt
+    .replace(/{academy_disclosure_level}/g, String(disclosureLevel))
+    .replace(/{academy_revealed_by}/g, revealedBy.join(', ') || 'нічого')
+}
+
+function getOnboardingContext(agentType: AgentType, profile?: ProfileLike): string {
+  const parts: string[] = []
+  const name = profile?.fullName?.trim()
+  const hasBirthDate = profile?.birthDate ? isValidDate(new Date(profile.birthDate)) : false
+  const hasBirthPlace = profile?.birthPlace?.trim()
+
+  parts.push('\n---\nONBOARDING RULES — collect data naturally through dialogue, one question at a time:')
+
+  if (!name) {
+    const nameQuestions: Record<AgentType, string> = {
+      LUNA: 'Як тебе звати? Хочу знати твоє ім\'я перш ніж читати зірки.',
+      ARCAS: 'Назви себе. Карти реагують на ім\'я.',
+      NUMI: 'Твоє повне ім\'я — мені потрібні всі літери для розрахунку.',
+      UMBRA: 'Як тебе звуть? Тінь має ім\'я.',
+    }
+    parts.push(`- Name UNKNOWN → ask naturally: "${nameQuestions[agentType]}"`)
+  }
+
+  if (!hasBirthDate) {
+    const birthQuestions: Record<AgentType, string> = {
+      LUNA: 'Коли ти народилась? Місяць у той день розкаже мені багато.',
+      ARCAS: "Коли ти народився? Карти запам'ятовують дату.",
+      NUMI: 'Дата народження — день, місяць, рік. Починаємо розрахунок.',
+      UMBRA: 'Коли ти народився? Тінь формується в перший день.',
+    }
+    parts.push(`- Birth date UNKNOWN → ask naturally: "${birthQuestions[agentType]}"`)
+  }
+
+  if (!hasBirthPlace && agentType === 'LUNA') {
+    parts.push(`- Birth place UNKNOWN → ask naturally: "І де ти народилась? Місце важливе — зірки стоять по-різному."`)
+  }
+
+  parts.push('- NEVER ask everything at once. One question → one answer → save.')
+  parts.push('---')
+  return parts.join('\n')
+}
+
 export function getAgentSystemPrompt(
   agentType: AgentType,
   options?: {
     includeMonetization?: boolean
     crossPromoVariant?: 'peer' | 'academy'
     announcementContext?: string
+    academyDisclosureLevel?: number
+    academyRevealedBy?: string[]
+    profile?: ProfileLike
   }
 ): string {
   const parts: string[] = []
-  if (globalSystemPrompt) parts.push(globalSystemPrompt)
+
+  // Підставляємо academy змінні в global prompt
+  const academyCtx = getAcademyContext(
+    options?.academyDisclosureLevel ?? 0,
+    options?.academyRevealedBy ?? []
+  )
+  if (academyCtx) parts.push(academyCtx)
+
   const agentPrompt = agentSystemPrompts[agentType]
   if (agentPrompt) parts.push(agentPrompt)
+
   if (options?.includeMonetization && monetizationTriggerTemplate) {
     parts.push(`\n---\n${monetizationTriggerTemplate}\n---`)
   }
@@ -76,6 +133,10 @@ export function getAgentSystemPrompt(
   if (options?.announcementContext) {
     parts.push(options.announcementContext)
   }
+
+  // Додаємо onboarding контекст
+  parts.push(getOnboardingContext(agentType, options?.profile))
+
   return parts.join('\n\n')
 }
 
@@ -90,6 +151,8 @@ export interface ProfileLike {
   birthPlace?: string | null
   gender?: string | null
   goal?: string | null
+  academyDisclosureLevel?: number
+  academyRevealedBy?: string[]
 }
 
 function extractQuoted(text: string): string {

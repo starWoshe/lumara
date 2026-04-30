@@ -10,6 +10,8 @@ const profileSchema = z.object({
   birthTime:  z.string().optional().nullable(),
   birthPlace: z.string().max(200).optional().nullable(),
   goal:       z.string().max(500).optional().nullable(),
+  academyDisclosureLevel: z.number().int().min(0).max(3).optional(),
+  academyRevealedBy: z.array(z.string()).optional(),
 })
 
 export async function GET() {
@@ -83,7 +85,11 @@ export async function PATCH(req: Request) {
 
     const profile = await db.profile.upsert({
       where: { userId: session.id },
-      update: { fullName, gender, birthDate, birthTime, birthPlace, goal },
+      update: {
+        fullName, gender, birthDate, birthTime, birthPlace, goal,
+        ...(data.academyDisclosureLevel !== undefined ? { academyDisclosureLevel: data.academyDisclosureLevel } : {}),
+        ...(data.academyRevealedBy !== undefined ? { academyRevealedBy: data.academyRevealedBy } : {}),
+      },
       create: {
         userId: session.id,
         fullName,
@@ -94,6 +100,8 @@ export async function PATCH(req: Request) {
         goal,
         language: 'uk',
         timezone: 'Europe/Kiev',
+        academyDisclosureLevel: data.academyDisclosureLevel ?? 0,
+        academyRevealedBy: data.academyRevealedBy ?? [],
       },
     })
 

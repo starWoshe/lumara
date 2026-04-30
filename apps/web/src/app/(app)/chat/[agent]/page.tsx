@@ -224,6 +224,7 @@ function ChatPageInner() {
   const agent = agentInfo[agentType] ?? agentInfo.LUNA
   const particles = PARTICLES[agentType]
   const utmSource = searchParams.get('utm_source') ?? ''
+  const utmKeyword = searchParams.get('utm_keyword') ?? ''
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -236,6 +237,25 @@ function ChatPageInner() {
   const [showLoginCta, setShowLoginCta] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Відновлюємо гостьові повідомлення з localStorage після реєстрації
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const saved = localStorage.getItem('lumara_guest_session')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (parsed.agent === agentType.toLowerCase() && parsed.messages?.length > 0) {
+          setMessages(parsed.messages)
+          setConversationId(parsed.conversationId)
+          setHasInitiated(true)
+        }
+        localStorage.removeItem('lumara_guest_session')
+      } catch {
+        localStorage.removeItem('lumara_guest_session')
+      }
+    }
+  }, [agentType])
 
   // Визначаємо чи гість
   useEffect(() => {
@@ -257,7 +277,7 @@ function ChatPageInner() {
         : `/api/chat/${agentType.toLowerCase()}`
 
       const body = guest
-        ? JSON.stringify({ initiate: true, utmSource })
+        ? JSON.stringify({ initiate: true, utmSource, utmKeyword })
         : JSON.stringify({ initiate: true })
 
       const res = await fetch(endpoint, {
@@ -294,7 +314,7 @@ function ChatPageInner() {
       setIsLoading(false)
       textareaRef.current?.focus()
     }
-  }, [agentType, utmSource])
+  }, [agentType, utmSource, utmKeyword])
 
   // Запускаємо initiate щойно визначили isGuest
   useEffect(() => {
@@ -331,6 +351,7 @@ function ChatPageInner() {
           messages: assistantHistory,
           guestCount,
           utmSource,
+          utmKeyword,
         })
       } else {
         endpoint = `/api/chat/${agentType.toLowerCase()}`
@@ -377,6 +398,14 @@ function ChatPageInner() {
         setGuestCount(newCount)
         if (registrationNeeded || newCount >= 3) {
           setShowLoginCta(true)
+          // Зберігаємо гостьову сесію для відновлення після реєстрації
+          const updatedMessages = [...newMessages, { role: 'assistant' as const, content: assistantMessage }]
+          localStorage.setItem('lumara_guest_session', JSON.stringify({
+            agent: agentType.toLowerCase(),
+            messages: updatedMessages,
+            utmSource,
+            utmKeyword,
+          }))
         }
       }
     } catch {
@@ -402,7 +431,7 @@ function ChatPageInner() {
     }
   }
 
-  const currentPath = `/chat/${agentType.toLowerCase()}${utmSource ? `?utm_source=${utmSource}` : ''}`
+  const currentPath = `/chat/${agentType.toLowerCase()}${utmSource ? `?utm_source=${utmSource}` : ''}${utmKeyword ? `${utmSource ? '&' : '?'}utm_keyword=${utmKeyword}` : ''}`
 
   // Поки перевіряємо auth — нічого не рендеримо
   if (isGuest === null) return null

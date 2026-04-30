@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Щоденний бот ARCAS — Карта Таро дня
-LUMARA Academy · Запускається о 09:00 UTC (12:00 Київ влітку)
+???????? ?????? · Запускається о 09:00 UTC (12:00 Київ влітку)
 
 Обов'язкові змінні середовища:
   ANTHROPIC_API_KEY          — ключ Anthropic API
@@ -9,9 +9,9 @@ LUMARA Academy · Запускається о 09:00 UTC (12:00 Київ вліт
   ARCAS_PAGE_ACCESS_TOKEN    — постійний Page Access Token ARCAS
   ARCAS_PAGE_ID              — Facebook Page ID ARCAS
   ARCAS_IG_USER_ID           — Instagram Business / Threads Account ID ARCAS
-  LUMARA_PAGE_ACCESS_TOKEN   — постійний Page Access Token LUMARA Academy
-  LUMARA_PAGE_ID             — Facebook Page ID LUMARA Academy
-  LUMARA_IG_USER_ID          — Instagram Business / Threads Account ID LUMARA Academy
+  LUMARA_PAGE_ACCESS_TOKEN   — постійний Page Access Token ???????? ??????
+  LUMARA_PAGE_ID             — Facebook Page ID ???????? ??????
+  LUMARA_IG_USER_ID          — Instagram Business / Threads Account ID ???????? ??????
 """
 
 import os
@@ -58,7 +58,7 @@ TAROT_MAJOR = [
 
 # ── Системні промпти ───────────────────────────────────────────────────────────
 
-ARCAS_SYSTEM_PROMPT = """Ти — ARCAS, провідник Таро і Оракулу LUMARA Academy.
+ARCAS_SYSTEM_PROMPT = """Ти — ARCAS, провідник Таро і Оракулу ???????? ??????.
 
 Твій характер:
 - Мудрий, загадковий, але доступний

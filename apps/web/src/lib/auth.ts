@@ -64,7 +64,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     await db.profile.upsert({
       where: { userId: newUser.id },
       update: {},
-      create: { userId: newUser.id, language: 'uk', timezone: 'Europe/Kiev' },
+      create: { userId: newUser.id, language: 'uk', timezone: 'Europe/Kiev', academyDisclosureLevel: 1 },
     })
     return {
       id: newUser.id,

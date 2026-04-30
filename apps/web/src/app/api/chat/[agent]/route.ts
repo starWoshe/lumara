@@ -305,6 +305,35 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
     }).catch(() => {})
 
     const profile = await db.profile.findUnique({ where: { userId } })
+
+    // --- Академія Лумара: оновлення рівня розкриття ---
+    if (profile && profile.academyDisclosureLevel < 3) {
+      const shouldUpdate = await (async () => {
+        if (profile.academyDisclosureLevel < 2) {
+          const totalUserMessages = await db.message.count({
+            where: { role: 'USER', conversation: { userId } },
+          })
+          return totalUserMessages >= 8
+        }
+        if (profile.academyDisclosureLevel < 3) {
+          const distinctAgents = await db.conversation.groupBy({
+            by: ['agentId'],
+            where: { userId },
+          })
+          return distinctAgents.length >= 2
+        }
+        return false
+      })()
+
+      if (shouldUpdate) {
+        const newLevel = profile.academyDisclosureLevel < 2 ? 2 : 3
+        db.profile.update({
+          where: { userId },
+          data: { academyDisclosureLevel: newLevel },
+        }).catch(() => {})
+      }
+    }
+
     const profileContext = buildProfileContext(profile as Record<string, unknown> | null, session.name)
 
     // --- Monetization & cross-promo logic ---
@@ -333,6 +362,9 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
       includeMonetization,
       crossPromoVariant,
       announcementContext: announcementCtx.context,
+      academyDisclosureLevel: profile?.academyDisclosureLevel ?? 0,
+      academyRevealedBy: (profile?.academyRevealedBy as string[]) ?? [],
+      profile: profile as ProfileLike | undefined,
     })
     const systemPrompt = basePrompt + profileContext
     const tokenLimit = AGENT_TOKEN_LIMITS[agentType]

@@ -1,5 +1,5 @@
 # 🌙 LUNA — Character Reference Sheet
-## Офіційний референс персонажа · LUMARA Academy
+## Офіційний референс персонажа · ???????? ??????
 
 *Версія 1.0 · Березень 2026*
 
@@ -132,4 +132,4 @@ Focus on deep blue eyes. Intimate, wise expression.
 
 ---
 
-*LUMARA Academy · lumara.fyi/luna · 🌙 Luna — Астролог*
+*???????? ?????? · lumara.fyi/luna · 🌙 Luna — Астролог*

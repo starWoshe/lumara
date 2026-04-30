@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin', 'cyrillic'] })
 
 export const metadata: Metadata = {
   title: 'LUMARA Admin',
-  description: 'Панель адміністратора LUMARA Academy',
+  description: 'Панель адміністратора Академія Лумара',
 }
 
 export default function RootLayout({
@@ -33,6 +33,12 @@ export default function RootLayout({
               className="text-sm text-gray-400 hover:text-white transition"
             >
               UserBot
+            </a>
+            <a
+              href="/health"
+              className="text-sm text-gray-400 hover:text-white transition"
+            >
+              Статус
             </a>
           </div>
         </nav>

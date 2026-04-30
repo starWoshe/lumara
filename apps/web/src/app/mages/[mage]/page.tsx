@@ -498,6 +498,31 @@ function MageContent({ mage, mobile }: { mage: Mage; mobile: boolean }) {
         </p>
       </div>
 
+      {/* Частина Академії Лумара */}
+      <div className={`fade-in-up stagger-4 border-t border-white/10 pt-5`}>
+        <p className="text-white/35 text-xs uppercase tracking-widest mb-3 font-semibold">
+          Частина Академії Лумара
+        </p>
+        <Link
+          href={`/chat/${mage.id}`}
+          className={`flex items-center gap-3 glass-card px-4 py-3 border ${mage.borderColor} hover:bg-white/10 active:bg-white/10 transition-all duration-200`}
+        >
+          <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-black/40">
+            <Image
+              src="/academy-castle.png"
+              alt="Академія Лумара"
+              fill
+              className="object-cover"
+              sizes="40px"
+            />
+          </div>
+          <div>
+            <div className="text-sm font-bold text-white/90">Академія Лумара</div>
+            <div className="text-white/40 text-xs">Поговорити з {mage.name} →</div>
+          </div>
+        </Link>
+      </div>
+
       {/* Навігація між магами */}
       <div className={`fade-in-up stagger-5 border-t border-white/10 pt-5 ${mobile ? 'mb-24' : ''}`}>
         <p className="text-white/35 text-xs uppercase tracking-widest mb-3 font-semibold">
