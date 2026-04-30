@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { getSessionUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import Link from 'next/link'
 import Image from 'next/image'
 import { mages } from '@/app/mages/mages-data'
@@ -37,8 +38,18 @@ const METEORS = [
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await getSessionUser()
+  const pathname = headers().get('x-pathname') ?? ''
+  const isPublicChat = pathname.startsWith('/chat/')
 
   if (!session) {
+    // Гостьовий режим: чат без сайдбару
+    if (isPublicChat) {
+      return (
+        <div className="h-dvh md:h-screen overflow-hidden bg-[#060610]">
+          {children}
+        </div>
+      )
+    }
     redirect('/login')
   }
 
@@ -155,9 +166,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </Link>
           <TrackedPricingLink />
           {session.role === 'ADMIN' && (
-            <Link href="/admin" className="mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-yellow-400/70 hover:text-yellow-300 hover:bg-yellow-900/20 transition-all text-xs">
-              <span>🛡️</span> Адмін панель
-            </Link>
+            <>
+              <Link href="/admin" className="mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-yellow-400/70 hover:text-yellow-300 hover:bg-yellow-900/20 transition-all text-xs">
+                <span>🛡️</span> Адмін панель
+              </Link>
+              <Link href="/admin/health" className="mt-0.5 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-yellow-400/50 hover:text-yellow-300 hover:bg-yellow-900/20 transition-all text-xs">
+                <span>🟢</span> Здоров'я системи
+              </Link>
+            </>
           )}
           <form action="/api/auth/signout" method="POST">
             <button type="submit" className="mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/5 transition-all text-xs">

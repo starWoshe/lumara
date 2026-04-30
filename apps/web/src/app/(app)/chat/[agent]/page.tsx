@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { track } from '@vercel/analytics'
+import { createClient } from '@/lib/supabase/client'
 
 type AgentType = 'LUNA' | 'ARCAS' | 'NUMI' | 'UMBRA'
 
@@ -13,9 +14,9 @@ interface Message {
 }
 
 const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
-  LUNA: 'Зірки зараз мовчать... Відчуваю перешкоду в каналі. Спробуй звернутись до мене трохи пізніше 🌙',
+  LUNA:  'Зірки зараз мовчать... Відчуваю перешкоду в каналі. Спробуй звернутись до мене трохи пізніше 🌙',
   ARCAS: 'Карти перевернулись. Щось заважає з\'єднанню — повернись за хвилину 🃏',
-  NUMI: 'Числа розійшлись. Спробуй ще раз — енергія відновиться 🔢',
+  NUMI:  'Числа розійшлись. Спробуй ще раз — енергія відновиться 🔢',
   UMBRA: 'Щось розриває зв\'язок між нами. Дай мені момент... і повернись 🧠',
 }
 
@@ -205,11 +206,24 @@ const CANDLE_POSITIONS = [
   { x: 22, y: 90, w: 100, delay: 1.2, dur: 4.0 },
 ]
 
-export default function ChatPage() {
+async function signInWithGoogle(callbackUrl: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackUrl)}`,
+    },
+  })
+  if (!error && data?.url) window.location.href = data.url
+}
+
+function ChatPageInner() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const agentType = (params.agent as string).toUpperCase() as AgentType
   const agent = agentInfo[agentType] ?? agentInfo.LUNA
   const particles = PARTICLES[agentType]
+  const utmSource = searchParams.get('utm_source') ?? ''
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -217,84 +231,84 @@ export default function ChatPage() {
   const [conversationId, setConversationId] = useState<string | undefined>()
   const [hasInitiated, setHasInitiated] = useState(false)
   const [roomLoaded, setRoomLoaded] = useState(false)
+  const [isGuest, setIsGuest] = useState<boolean | null>(null) // null = перевіряємо
+  const [guestCount, setGuestCount] = useState(0)
+  const [showLoginCta, setShowLoginCta] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Визначаємо чи гість
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setIsGuest(!data.user)
+    })
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const initiateChat = useCallback(async () => {
+  const initiateChat = useCallback(async (guest: boolean) => {
     setIsLoading(true)
     try {
-      const res = await fetch(`/api/chat/${agentType.toLowerCase()}`, {
+      const endpoint = guest
+        ? `/api/chat/guest/${agentType.toLowerCase()}`
+        : `/api/chat/${agentType.toLowerCase()}`
+
+      const body = guest
+        ? JSON.stringify({ initiate: true, utmSource })
+        : JSON.stringify({ initiate: true })
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initiate: true }),
+        body,
       })
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.message || errData.error || `HTTP ${res.status}`)
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
       const reader = res.body!.getReader()
       const decoder = new TextDecoder()
       let assistantMessage = ''
 
-      setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
+      setMessages([{ role: 'assistant', content: '' }])
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
+        for (const line of chunk.split('\n')) {
           if (!line.startsWith('data: ')) continue
           const data = JSON.parse(line.slice(6))
-
           if (data.text) {
             assistantMessage += data.text
-            setMessages((prev) => {
-              const updated = [...prev]
-              updated[updated.length - 1] = { role: 'assistant', content: assistantMessage }
-              return updated
-            })
+            setMessages([{ role: 'assistant', content: assistantMessage }])
           }
-
-          if (data.conversationId) {
-            setConversationId(data.conversationId)
-          }
+          if (data.conversationId) setConversationId(data.conversationId)
         }
       }
-    } catch (err) {
-      setMessages((prev) => {
-        const last = prev[prev.length - 1]
-        if (last && last.role === 'assistant' && last.content === '') {
-          const updated = [...prev]
-          updated[updated.length - 1] = { role: 'assistant', content: getAgentErrorMessage(agentType) }
-          return updated
-        }
-        return [...prev, { role: 'assistant', content: getAgentErrorMessage(agentType) }]
-      })
+    } catch {
+      setMessages([{ role: 'assistant', content: getAgentErrorMessage(agentType) }])
     } finally {
       setIsLoading(false)
       textareaRef.current?.focus()
     }
-  }, [agentType])
+  }, [agentType, utmSource])
 
+  // Запускаємо initiate щойно визначили isGuest
   useEffect(() => {
-    if (!conversationId && messages.length === 0 && !isLoading && !hasInitiated) {
+    if (isGuest === null) return
+    if (!hasInitiated) {
       setHasInitiated(true)
-      initiateChat()
+      initiateChat(isGuest)
     }
-  }, [conversationId, messages.length, isLoading, hasInitiated, initiateChat])
+  }, [isGuest, hasInitiated, initiateChat])
 
   async function sendMessage() {
     const text = input.trim()
     if (!text || isLoading) return
+    if (showLoginCta) return // після запрошення реєстрації — не надсилаємо
 
     const userMsgCount = messages.filter((m) => m.role === 'user').length
     if (userMsgCount === 0) track('first_message', { agent: agentType })
@@ -302,45 +316,49 @@ export default function ChatPage() {
 
     setInput('')
     setIsLoading(true)
-    setMessages((prev) => [...prev, { role: 'user', content: text }])
+    const newMessages: Message[] = [...messages, { role: 'user', content: text }]
+    setMessages(newMessages)
 
     try {
-      const res = await fetch(`/api/chat/${agentType.toLowerCase()}`, {
+      let endpoint: string
+      let body: string
+
+      if (isGuest) {
+        const assistantHistory = newMessages.slice(0, -1) // без щойно доданого user повідомлення
+        endpoint = `/api/chat/guest/${agentType.toLowerCase()}`
+        body = JSON.stringify({
+          content: text,
+          messages: assistantHistory,
+          guestCount,
+          utmSource,
+        })
+      } else {
+        endpoint = `/api/chat/${agentType.toLowerCase()}`
+        body = JSON.stringify({ content: text, conversationId })
+      }
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text, conversationId }),
+        body,
       })
 
-      if (!res.ok) {
-        throw new Error('chat_error')
-      }
+      if (!res.ok) throw new Error('chat_error')
 
       const reader = res.body!.getReader()
       const decoder = new TextDecoder()
       let assistantMessage = ''
+      let registrationNeeded = false
 
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
+        for (const line of chunk.split('\n')) {
           if (!line.startsWith('data: ')) continue
           const data = JSON.parse(line.slice(6))
-
-          if (data.error) {
-            setMessages((prev) => {
-              const updated = [...prev]
-              updated[updated.length - 1] = { role: 'assistant', content: getAgentErrorMessage(agentType) }
-              return updated
-            })
-            break
-          }
-
           if (data.text) {
             assistantMessage += data.text
             setMessages((prev) => {
@@ -349,16 +367,22 @@ export default function ChatPage() {
               return updated
             })
           }
-
-          if (data.conversationId) {
-            setConversationId(data.conversationId)
-          }
+          if (data.conversationId) setConversationId(data.conversationId)
+          if (data.registrationNeeded) registrationNeeded = true
         }
       }
-    } catch (err) {
+
+      if (isGuest) {
+        const newCount = guestCount + 1
+        setGuestCount(newCount)
+        if (registrationNeeded || newCount >= 3) {
+          setShowLoginCta(true)
+        }
+      }
+    } catch {
       setMessages((prev) => {
         const last = prev[prev.length - 1]
-        if (last && last.role === 'assistant' && last.content === '') {
+        if (last?.role === 'assistant' && last.content === '') {
           const updated = [...prev]
           updated[updated.length - 1] = { role: 'assistant', content: getAgentErrorMessage(agentType) }
           return updated
@@ -378,6 +402,13 @@ export default function ChatPage() {
     }
   }
 
+  const currentPath = `/chat/${agentType.toLowerCase()}${utmSource ? `?utm_source=${utmSource}` : ''}`
+
+  // Поки перевіряємо auth — нічого не рендеримо
+  if (isGuest === null) return null
+
+  const hasSidebar = !isGuest
+
   return (
     <div className={`flex flex-col h-dvh md:h-screen bg-gradient-to-b ${agent.bgColor} relative overflow-hidden`}>
 
@@ -392,10 +423,9 @@ export default function ChatPage() {
         priority
         onLoad={() => setRoomLoaded(true)}
       />
-      {/* Накладка-градієнт поверх кімнати */}
       <div className={`absolute inset-0 bg-gradient-to-b ${agent.overlayColor} pointer-events-none`} />
 
-      {/* ── Магічне сяйво (унікальне для кожного мага) ── */}
+      {/* ── Магічне сяйво ── */}
       <div
         className="chat-magic-glow absolute pointer-events-none"
         style={{
@@ -418,10 +448,8 @@ export default function ChatPage() {
             key={i}
             className="absolute rounded-full blur-3xl"
             style={{
-              left: `${c.x}%`,
-              top: `${c.y}%`,
-              width: `${c.w}px`,
-              height: `${c.w}px`,
+              left: `${c.x}%`, top: `${c.y}%`,
+              width: `${c.w}px`, height: `${c.w}px`,
               transform: 'translate(-50%, -50%)',
               background: `radial-gradient(circle, ${agent.candleColors[i] ?? agent.candleColors[0]} 0%, transparent 70%)`,
               animation: `chat-candle ${c.dur}s ${c.delay}s infinite ease-in-out`,
@@ -437,10 +465,8 @@ export default function ChatPage() {
             key={i}
             className="absolute rounded-full"
             style={{
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              width: `${p.size}px`,
-              height: `${p.size}px`,
+              left: `${p.x}%`, top: `${p.y}%`,
+              width: `${p.size}px`, height: `${p.size}px`,
               background: agent.particleColor,
               boxShadow: agent.particleGlow,
               opacity: 0,
@@ -450,8 +476,6 @@ export default function ChatPage() {
         ))}
       </div>
 
-
-      {/* ── Плавний перехід до поля вводу ── */}
       <div
         className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none z-[1]"
         style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%)' }}
@@ -481,7 +505,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* ── ARCAS: пульсуюча куля-кристал (центр) ── */}
+      {/* ── ARCAS: пульсуюча куля ── */}
       {agentType === 'ARCAS' && messages.length === 0 && (
         <div
           className="absolute pointer-events-none"
@@ -503,9 +527,9 @@ export default function ChatPage() {
       {agentType === 'UMBRA' && (
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           {[
-            { x: 15, y: 40, delay: 0,   dur: 12 },
-            { x: 75, y: 55, delay: 4,   dur: 15 },
-            { x: 45, y: 25, delay: 8,   dur: 10 },
+            { x: 15, y: 40, delay: 0,  dur: 12 },
+            { x: 75, y: 55, delay: 4,  dur: 15 },
+            { x: 45, y: 25, delay: 8,  dur: 10 },
           ].map((m, i) => (
             <div
               key={i}
@@ -568,9 +592,19 @@ export default function ChatPage() {
           <h1 className="font-semibold text-white">{agent.name}</h1>
           <p className="text-xs text-white/40">{agent.role}</p>
         </div>
-        <div className="ml-auto flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-xs text-white/30">онлайн</span>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs text-white/30">онлайн</span>
+          </span>
+          {isGuest && (
+            <button
+              onClick={() => signInWithGoogle(currentPath)}
+              className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all border border-white/10"
+            >
+              Увійти
+            </button>
+          )}
         </div>
       </header>
 
@@ -593,53 +627,75 @@ export default function ChatPage() {
                   <div className="w-full h-full flex items-center justify-center text-4xl bg-white/5">{agent.emoji}</div>
                 )}
               </div>
-              <p className="text-white/60 text-lg font-display">[{agent.name}] вже знає твоє ім&apos;я.</p>
-              <p className="text-white/30 text-sm mt-1 max-w-xs mx-auto">Перші 15 повідомлень — повністю безкоштовно.</p>
+              <p className="text-white/60 text-lg font-display">{agent.name} вже тут.</p>
+              <p className="text-white/30 text-sm mt-1 max-w-xs mx-auto">Перші 3 повідомлення — безкоштовно без реєстрації.</p>
             </div>
           </div>
         ) : (
-        <div className="flex flex-col justify-end min-h-full space-y-4">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            {msg.role === 'assistant' && (
-              <div className={`w-7 h-7 rounded-full overflow-hidden border ${agent.borderColor} flex-shrink-0 mt-1`}>
-                {agent.avatar ? (
-                  <Image src={agent.avatar} alt={agent.name} width={28} height={28} className={`object-cover w-full h-full ${agent.avatarPos ?? 'object-top'}`} />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm bg-white/5">{agent.emoji}</div>
+          <div className="flex flex-col justify-end min-h-full space-y-4">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {msg.role === 'assistant' && (
+                  <div className={`w-7 h-7 rounded-full overflow-hidden border ${agent.borderColor} flex-shrink-0 mt-1`}>
+                    {agent.avatar ? (
+                      <Image src={agent.avatar} alt={agent.name} width={28} height={28} className={`object-cover w-full h-full ${agent.avatarPos ?? 'object-top'}`} />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-sm bg-white/5">{agent.emoji}</div>
+                    )}
+                  </div>
                 )}
+                <div
+                  className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                    msg.role === 'user'
+                      ? `${agent.accentColor} text-white rounded-br-sm`
+                      : 'glass-card text-white/90 rounded-bl-sm'
+                  }`}
+                >
+                  {msg.content || (
+                    <span className="flex gap-1 items-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-lumara-400 animate-bounce [animation-delay:0ms]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-lumara-400 animate-bounce [animation-delay:150ms]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-lumara-400 animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* ── Інлайн CTA реєстрації (після 3 гостьових повідомлень) ── */}
+            {showLoginCta && (
+              <div className="flex justify-center mt-2">
+                <div
+                  className="rounded-2xl px-5 py-4 text-center max-w-xs border border-white/20"
+                  style={{ background: 'rgba(10,8,30,0.75)', backdropFilter: 'blur(12px)' }}
+                >
+                  <p className="text-white/80 text-sm mb-3 leading-relaxed">
+                    Зареєструйся, щоб продовжити розмову і зберегти її
+                  </p>
+                  <button
+                    onClick={() => signInWithGoogle(currentPath)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-medium text-sm transition-all active:scale-95"
+                    style={{ background: 'rgba(255,255,255,0.93)', color: '#1a1a2e' }}
+                  >
+                    <GoogleIcon />
+                    Продовжити через Google
+                  </button>
+                  <p className="text-white/25 text-xs mt-2">30 секунд · безкоштовно</p>
+                </div>
               </div>
             )}
 
-            <div
-              className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
-                msg.role === 'user'
-                  ? `${agent.accentColor} text-white rounded-br-sm`
-                  : 'glass-card text-white/90 rounded-bl-sm'
-              }`}
-            >
-              {msg.content || (
-                <span className="flex gap-1 items-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-lumara-400 animate-bounce [animation-delay:0ms]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-lumara-400 animate-bounce [animation-delay:150ms]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-lumara-400 animate-bounce [animation-delay:300ms]" />
-                </span>
-              )}
-            </div>
+            <div ref={bottomRef} />
           </div>
-        ))}
-
-        <div ref={bottomRef} />
-        </div>
         )}
       </div>
 
       {/* ── Поле вводу ── */}
       <div
-        className="fixed bottom-0 left-0 right-0 md:left-60 z-20 border-t border-white/10 bg-black/40 backdrop-blur-md px-4 pt-3"
+        className={`fixed bottom-0 left-0 right-0 ${hasSidebar ? 'md:left-60' : ''} z-20 border-t border-white/10 bg-black/40 backdrop-blur-md px-4 pt-3`}
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-3xl mx-auto flex gap-3 items-end">
@@ -648,14 +704,14 @@ export default function ChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={agent.placeholder}
+            placeholder={showLoginCta ? 'Зареєструйся, щоб продовжити...' : agent.placeholder}
             rows={1}
-            disabled={isLoading}
+            disabled={isLoading || showLoginCta}
             className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm resize-none focus:outline-none focus:border-lumara-500/50 disabled:opacity-50 max-h-32"
           />
           <button
             onClick={sendMessage}
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || !input.trim() || showLoginCta}
             className="bg-lumara-600 hover:bg-lumara-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl px-4 py-3 transition-colors flex-shrink-0"
           >
             {isLoading ? (
@@ -670,58 +726,47 @@ export default function ChatPage() {
             )}
           </button>
         </div>
-        <p className="text-center text-white/20 text-xs mt-2">Enter — надіслати · Shift+Enter — новий рядок</p>
+        {isGuest && !showLoginCta && (
+          <p className="text-center text-white/20 text-xs mt-2">
+            {3 - guestCount > 0 ? `Залишилось ${3 - guestCount} безкоштовних повідомлень` : 'Enter — надіслати · Shift+Enter — новий рядок'}
+          </p>
+        )}
+        {!isGuest && (
+          <p className="text-center text-white/20 text-xs mt-2">Enter — надіслати · Shift+Enter — новий рядок</p>
+        )}
       </div>
 
       {/* ── CSS анімації ── */}
       <style>{`
-        /* Мерехтіння свічок */
         @keyframes chat-candle {
           0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
           25%       { opacity: 0.3; transform: translate(-50%, -50%) scale(1.1) skewX(1deg); }
           55%       { opacity: 0.7; transform: translate(-50%, -50%) scale(0.93); }
           80%       { opacity: 0.45; transform: translate(-50%, -50%) scale(1.06) skewX(-1deg); }
         }
-
-        /* Плаваючі частинки */
         @keyframes chat-particle {
           0%   { opacity: 0; transform: translateY(0) scale(0); }
           15%  { opacity: 0.85; transform: translateY(-15px) scale(1); }
           75%  { opacity: 0.4; transform: translateY(-70px) scale(0.8); }
           100% { opacity: 0; transform: translateY(-100px) scale(0); }
         }
-
-        /* Мерехтіння зірок (LUNA) */
         @keyframes chat-twinkle {
           0%, 100% { opacity: 0.1; transform: scale(0.7); }
           30%      { opacity: 0.9; transform: scale(1.4); box-shadow: 0 0 4px 2px rgba(165,180,252,0.7); }
           65%      { opacity: 0.3; transform: scale(0.9); }
         }
-
-        /* Пульсуюче сяйво (ARCAS кристал) */
         @keyframes chat-pulse {
           0%, 100% { opacity: 0.3; transform: scale(1); }
           50%      { opacity: 0.55; transform: scale(1.05); }
         }
-
-        /* Магічне сяйво */
-        .chat-magic-glow {
-          animation: chat-glow-pulse 10s infinite ease-in-out;
-        }
+        .chat-magic-glow { animation: chat-glow-pulse 10s infinite ease-in-out; }
         @keyframes chat-glow-pulse {
           0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(1); }
           50%      { opacity: 0.45; transform: translate(-50%, -50%) scale(1.05); }
         }
-
-        /* Мобільний екран — менший glow щоб не давав смуг */
         @media (max-width: 767px) {
-          .chat-magic-glow {
-            width: 280px !important;
-            height: 280px !important;
-          }
+          .chat-magic-glow { width: 280px !important; height: 280px !important; }
         }
-
-        /* Туманні тіні (UMBRA) */
         @keyframes chat-mist {
           0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1) skewX(0deg); }
           33%      { opacity: 0.6; transform: translate(-52%, -48%) scale(1.1) skewX(2deg); }
@@ -729,5 +774,24 @@ export default function ChatPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 flex-shrink-0">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatPageInner />
+    </Suspense>
   )
 }

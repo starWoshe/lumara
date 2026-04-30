@@ -118,7 +118,7 @@ export function getAgentFirstMessage(agentType: AgentType, profile?: ProfileLike
         : false
 
       if (hasValidBirthDate && birthDateRaw) {
-        const sign = getMoonSignPlaceholder(birthDateRaw)
+        const sign = getMoonSign(birthDateRaw)
         const section = template.split('---')[0]
         return safeReplace(safeReplace(safeReplace(extractQuoted(section),
           /\[Ім'я\]/g, name),
@@ -149,27 +149,56 @@ export function getAgentFirstMessage(agentType: AgentType, profile?: ProfileLike
   }
 }
 
-function getMoonSignPlaceholder(_birthDate: Date | string): string {
-  // Real astrology calculation is out of scope for this prompt layer;
-
-  const signs = [
-    'Рибах',
-    'Терезах',
-    'Скорпіоні',
-    'Стрільці',
-    'Козерозі',
-    'Водолії',
-    'Раках',
-    'Леві',
-    'Діві',
-    'Овні',
-    'Тільці',
-    'Близнюках',
+function getMoonSign(birthDate: Date | string): string {
+  // Алгоритм Меуса (Astronomical Algorithms, Ch.47) — точність ~0.5°
+  const SIGNS = [
+    'Овні', 'Тільці', 'Близнюках', 'Раках',
+    'Леві', 'Діві', 'Терезах', 'Скорпіоні',
+    'Стрільці', 'Козерозі', 'Водолії', 'Рибах',
   ]
-  // Deterministic-ish based on day of month to avoid randomness on every load
-  const d = new Date(_birthDate)
-  if (!isValidDate(d)) return 'Тельці' // fallback
-  return signs[d.getDate() % signs.length]
+
+  const d = new Date(birthDate)
+  if (!isValidDate(d)) return 'Тельці'
+
+  // Юліанський день (полудень за замовчуванням, коли час невідомий)
+  const Y = d.getFullYear()
+  const M = d.getMonth() + 1
+  const D = d.getDate() + 0.5 // полудень
+  const a = Math.floor((14 - M) / 12)
+  const y = Y + 4800 - a
+  const m = M + 12 * a - 3
+  const JD = D + Math.floor((153 * m + 2) / 5) + 365 * y +
+             Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045
+
+  // Юліанські сторіччя від J2000.0
+  const T = (JD - 2451545.0) / 36525.0
+
+  const r = (deg: number) => (deg * Math.PI) / 180
+  const norm = (deg: number) => ((deg % 360) + 360) % 360
+
+  // Базові аргументи (градуси)
+  const L0 = norm(218.3164477 + 481267.88123421 * T)  // Середня довгота Місяця
+  const Mp = norm(134.9633964 + 477198.8675055  * T)  // Середня аномалія Місяця
+  const Ms = norm(357.5291092 + 35999.0502909   * T)  // Середня аномалія Сонця
+  const D0 = norm(297.8501921 + 445267.1114034  * T)  // Середнє подовження
+  const F  = norm(93.2720950  + 483202.0175233  * T)  // Аргумент широти
+
+  // Корекції довготи (градуси)
+  const dL = 6.288774 * Math.sin(r(Mp))
+           + 1.274027 * Math.sin(r(2*D0 - Mp))
+           + 0.658314 * Math.sin(r(2*D0))
+           + 0.213618 * Math.sin(r(2*Mp))
+           - 0.185116 * Math.sin(r(Ms))
+           - 0.114332 * Math.sin(r(2*F))
+           + 0.058793 * Math.sin(r(2*D0 - 2*Mp))
+           + 0.057066 * Math.sin(r(2*D0 + Mp - Ms))
+           + 0.053322 * Math.sin(r(2*D0 + Mp))
+           + 0.045758 * Math.sin(r(2*D0 - Ms))
+           + 0.041775 * Math.sin(r(Mp - Ms))
+           + 0.034907 * Math.sin(r(Mp + Ms))
+
+  const longitude = norm(L0 + dL)
+  return SIGNS[Math.floor(longitude / 30)]
 }
 
 function calculateDestinyNumber(birthDate: Date | string): number {

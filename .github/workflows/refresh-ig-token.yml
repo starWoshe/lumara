@@ -66,3 +66,11 @@ jobs:
           gh secret set IG_ACCESS_TOKEN --body "$NEW_TOKEN" --repo "${{ github.repository }}"
           echo "✅ IG_ACCESS_TOKEN оновлено в GitHub Secrets"
           echo "📅 Новий термін дії: $EXPIRES_DATE"
+
+      - name: Telegram алерт при збої
+        if: failure()
+        run: |
+          TEXT="🔴 LUMARA ALERT%0A%0AWorkflow: ${{ github.workflow }}%0AСтатус: ПОМИЛКА%0AЧас: $(date '+%Y-%m-%d %H:%M UTC')"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=@Volodymyr_Shemchuk" \
+            -d "text=$TEXT"

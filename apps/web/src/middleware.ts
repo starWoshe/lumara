@@ -31,11 +31,14 @@ export async function middleware(request: NextRequest) {
   void allCookieNames
 
   const publicPaths = [
-    '/', '/login', '/pricing', '/mages', '/links',
+    '/', '/login', '/pricing', '/mages', '/links', '/chat',
     '/api/auth', '/api/stripe/webhook', '/auth',
-    '/api/cron', '/api/academy',
+    '/api/cron', '/api/academy', '/api/chat/guest',
   ]
   const isPublic = publicPaths.some((p) => path === p || path.startsWith(p + '/'))
+
+  // Передаємо pathname до layout через header
+  supabaseResponse.headers.set('x-pathname', path)
 
   if (path === '/login' && user) {
     const callbackUrl = request.nextUrl.searchParams.get('callbackUrl')
