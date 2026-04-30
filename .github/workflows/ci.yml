@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Клонувати репозиторій
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Встановити pnpm
         uses: pnpm/action-setup@v4
@@ -21,7 +21,7 @@ jobs:
           version: 10
 
       - name: Встановити Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -37,7 +37,7 @@ jobs:
     name: Перевірка коду
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Встановити pnpm
         uses: pnpm/action-setup@v3
@@ -45,7 +45,7 @@ jobs:
           version: 9
 
       - name: Встановити Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -57,3 +57,4 @@ jobs:
         run: pnpm run lint
 
   # Деплой керується Vercel через GitHub інтеграцію автоматично
+

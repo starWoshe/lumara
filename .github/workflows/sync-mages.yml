@@ -60,7 +60,7 @@ jobs:
 
     steps:
       - name: Checkout main repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure GitHub CLI
         env:
@@ -194,3 +194,4 @@ jobs:
           set_secret "FACEBOOK_MAX_PER_DAY" "${{ secrets.FACEBOOK_MAX_PER_DAY || '15' }}"
 
           echo "✅ Secrets synced to $REPO"
+

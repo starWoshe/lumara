@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Клонувати репозиторій
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Встановити Python 3.11
         uses: actions/setup-python@v5
@@ -46,3 +46,4 @@ jobs:
           python packages/agents/scripts/instagram_comment_monitor.py
 
       # State зберігається в Supabase (monitor_states) під platform='FACEBOOK'
+
