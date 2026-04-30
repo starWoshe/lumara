@@ -45,23 +45,68 @@ else:
 
 # ── Конфігурація ──────────────────────────────────────────────────────────────
 
-REACTION_EMOJIS = ['❤️', '🌙', '✨']
-MAX_WARMUP_REACTIONS_PER_DAY = 7
-MAX_ACTIVE_MESSAGES_PER_DAY = 2
-MIN_REACTION_PAUSE_MIN = 30
-MAX_REACTION_PAUSE_MIN = 120
-MIN_MESSAGE_PAUSE_MIN = 40
-MAX_MESSAGE_PAUSE_MIN = 240
 MAX_RUNTIME_MIN = 40
 
-TOPIC_KEYWORDS = [
-    'астролог', 'гороскоп', 'знак', 'натальна', 'транзит', 'місяць', 'місячний',
-    'цикл', 'повний місяць', 'новий місяць', 'планета', 'ретроград',
-    'стосунки', 'кохання', 'партнер', 'чоловік', 'розлучення', 'сім\'я',
-    'жіноча', 'криза', 'призначення', 'місія', 'покликання', 'доля',
-    'таро', 'карта', 'розклад', 'нумеролог', 'число', 'психолог',
-    'емоції', 'тінь', 'архетип', 'саморозвиток', 'енергія',
-]
+# Унікальна конфігурація для кожного мага — зменшує ризик паттерну для Telegram
+MAGE_CONFIGS = {
+    'LUNA': {
+        'reaction_emojis': ['🌙', '✨', '💖', '🌕', '💫'],
+        'min_reaction_pause_min': 25,
+        'max_reaction_pause_min': 110,
+        'min_message_pause_min': 35,
+        'max_message_pause_min': 200,
+        'max_reactions_per_day': 6,
+        'max_messages_per_day': 2,
+        'topic_keywords': [
+            'астролог', 'гороскоп', 'знак', 'натальна', 'транзит', 'місяць', 'місячний',
+            'цикл', 'повний місяць', 'новий місяць', 'планета', 'ретроград',
+            'стосунки', 'кохання', 'партнер', 'чоловік', 'розлучення', 'сім\'я',
+            'жіноча', 'криза', 'призначення', 'місія', 'покликання', 'доля',
+        ],
+    },
+    'ARCAS': {
+        'reaction_emojis': ['🔮', '🃏', '✨', '🌟', '💜'],
+        'min_reaction_pause_min': 32,
+        'max_reaction_pause_min': 125,
+        'min_message_pause_min': 42,
+        'max_message_pause_min': 220,
+        'max_reactions_per_day': 5,
+        'max_messages_per_day': 2,
+        'topic_keywords': [
+            'таро', 'карта', 'розклад', 'аркана', 'оракул', 'мажор', 'мінор',
+            'руна', 'гадання', 'прогноз', 'долі', 'подія', 'вибір', 'рішення',
+            'енергія', 'чакра', 'ритуал', 'захист', 'очищення', 'енергетика',
+        ],
+    },
+    'NUMI': {
+        'reaction_emojis': ['🔢', '✨', '💫', '📿', '🧿'],
+        'min_reaction_pause_min': 28,
+        'max_reaction_pause_min': 115,
+        'min_message_pause_min': 38,
+        'max_message_pause_min': 210,
+        'max_reactions_per_day': 7,
+        'max_messages_per_day': 1,
+        'topic_keywords': [
+            'нумеролог', 'число', 'дата народження', 'матриця долі', 'life path',
+            'психоматриця', 'число долі', 'код долі', 'піфагор', 'вібрація',
+            'сумісність', 'період', 'цикл', 'рік', 'місяць', 'день',
+        ],
+    },
+    'UMBRA': {
+        'reaction_emojis': ['🌑', '🖤', '✨', '🦋', '🌘'],
+        'min_reaction_pause_min': 35,
+        'max_reaction_pause_min': 130,
+        'min_message_pause_min': 45,
+        'max_message_pause_min': 240,
+        'max_reactions_per_day': 5,
+        'max_messages_per_day': 2,
+        'topic_keywords': [
+            'психолог', 'стосунки', 'емоції', 'тінь', 'архетип', 'саморозвиток',
+            'травма', 'кодpendентність', 'внутрішній', 'дитина', 'підсвідоме',
+            'медитація', 'практика', 'особистісний', 'ріст', 'трансформація',
+        ],
+    },
+}
 
 SYSTEM_PROMPTS = {
     'LUNA': (
@@ -225,22 +270,23 @@ class SupabaseStore:
 # ── Rate Limiter ──────────────────────────────────────────────────────────────
 
 class RateLimiter:
-    def __init__(self, store: SupabaseStore, mage: str, mode: str):
+    def __init__(self, store: SupabaseStore, mage: str, mode: str, config: dict):
         self.store = store
         self.mage = mage.upper()
         self.mode = mode
+        self.config = config
 
     def can_react(self) -> bool:
         if self.mode != 'warmup':
             return False
         count = self.store.count_actions_today(self.mage, 'REACTION')
-        return count < MAX_WARMUP_REACTIONS_PER_DAY
+        return count < self.config['max_reactions_per_day']
 
     def can_message(self) -> bool:
         if self.mode != 'active':
             return False
         count = self.store.count_actions_today(self.mage, 'MESSAGE')
-        return count < MAX_ACTIVE_MESSAGES_PER_DAY
+        return count < self.config['max_messages_per_day']
 
 
 # ── Mage UserBot ──────────────────────────────────────────────────────────────
@@ -250,6 +296,7 @@ class MageUserBot:
         self.mage = mage.upper()
         self.mode = mode
         self.store = store
+        self.config = MAGE_CONFIGS.get(self.mage, MAGE_CONFIGS['LUNA'])
         self.api_id = int(os.environ.get(f'{self.mage}_API_ID', '0') or '0')
         self.api_hash = os.environ.get(f'{self.mage}_API_HASH', '')
         self.client: Optional[TelegramClient] = None
@@ -272,7 +319,7 @@ class MageUserBot:
         log(self.mage, '✅ Авторизовано в Telegram')
 
     async def run_warmup(self):
-        limiter = RateLimiter(self.store, self.mage, self.mode)
+        limiter = RateLimiter(self.store, self.mage, self.mode, self.config)
         groups = self.store.get_groups(self.mage.lower())
         if not groups:
             log(self.mage, '⚠️ Немає активних груп для моніторингу')
@@ -301,7 +348,7 @@ class MageUserBot:
 
                 # Вибираємо випадкове повідомлення для реакції
                 msg = random.choice(messages)
-                emoji = random.choice(REACTION_EMOJIS)
+                emoji = random.choice(self.config['reaction_emojis'])
 
                 await msg.react(emoji)
                 reactions_done += 1
@@ -314,7 +361,7 @@ class MageUserBot:
                 # Оновлюємо last_visited
                 self._update_group_last_visited(username)
 
-                pause_sec = random.randint(MIN_REACTION_PAUSE_MIN, MAX_REACTION_PAUSE_MIN) * 60
+                pause_sec = random.randint(self.config['min_reaction_pause_min'], self.config['max_reaction_pause_min']) * 60
                 log(self.mage, f'⏳ Пауза {pause_sec // 60} хв перед наступною дією...')
                 await asyncio.sleep(pause_sec)
 
@@ -334,7 +381,7 @@ class MageUserBot:
         log(self.mage, f'🏁 Warmup завершено. Реакцій сьогодні: {reactions_done}')
 
     async def run_active(self):
-        limiter = RateLimiter(self.store, self.mage, self.mode)
+        limiter = RateLimiter(self.store, self.mage, self.mode, self.config)
         groups = self.store.get_groups(self.mage.lower())
         if not groups:
             log(self.mage, '⚠️ Немає активних груп для моніторингу')
@@ -393,7 +440,7 @@ class MageUserBot:
 
                 self._update_group_last_visited(username)
 
-                pause_sec = random.randint(MIN_MESSAGE_PAUSE_MIN, MAX_MESSAGE_PAUSE_MIN) * 60
+                pause_sec = random.randint(self.config['min_message_pause_min'], self.config['max_message_pause_min']) * 60
                 log(self.mage, f'⏳ Пауза {pause_sec // 60} хв перед наступною дією...')
                 await asyncio.sleep(pause_sec)
 
@@ -414,7 +461,7 @@ class MageUserBot:
 
     def _is_relevant_topic(self, text: str) -> bool:
         t = text.lower()
-        return any(kw in t for kw in TOPIC_KEYWORDS)
+        return any(kw in t for kw in self.config['topic_keywords'])
 
     def _generate_reply(self, ai_client: anthropic.Anthropic, context: str) -> Optional[str]:
         system = SYSTEM_PROMPTS.get(self.mage, SYSTEM_PROMPTS['LUNA'])
