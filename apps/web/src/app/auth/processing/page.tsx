@@ -14,7 +14,7 @@ function ProcessingContent() {
     const next = searchParams.get('next') ?? '/dashboard'
     const dest = next.startsWith('/') ? next : '/dashboard'
     router.replace(dest)
-  }, [])
+  }, [router, searchParams])
 
   return (
     <div style={{
