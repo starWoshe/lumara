@@ -1,0 +1,28 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Щодня о 08:00 UTC — до Vercel cron (09:00), щоб точно прокинулось
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping /api/health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Штурхнути Supabase
+        run: |
+          echo "Pinging production /api/health..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            --max-time 30 \
+            "https://lumara.fyi/api/health")
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Supabase is alive (HTTP 200)"
+          else
+            echo "⚠️ Unexpected response: HTTP $HTTP_CODE"
+            # Не падаємо — просто логуємо, бо база може бути в процесі пробудження
+          fi
