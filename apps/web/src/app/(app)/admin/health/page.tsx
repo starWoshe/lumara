@@ -74,7 +74,7 @@ export default function HealthPage() {
             <Link href="/admin" className="text-white/40 text-sm hover:text-white/70 transition-colors">
               ← Адмін панель
             </Link>
-            <h1 className="text-2xl font-semibold mt-2">Здоров&apos;я системи</h1>
+            <h1 className="text-2xl font-semibold mt-2">Статус системи</h1>
             {data && (
               <p className="text-white/40 text-xs mt-1">
                 Оновлено: {new Date(data.timestamp).toLocaleString('uk-UA')}

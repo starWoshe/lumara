@@ -171,7 +171,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
                 <span>🛡️</span> Адмін панель
               </Link>
               <Link href="/admin/health" className="mt-0.5 w-full flex items-center gap-2 px-3 py-2 rounded-xl text-yellow-400/50 hover:text-yellow-300 hover:bg-yellow-900/20 transition-all text-xs">
-                <span>🟢</span> Здоров&apos;я системи
+                <span>🟢</span> Статус системи
               </Link>
             </>
           )}

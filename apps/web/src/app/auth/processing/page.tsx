@@ -28,7 +28,7 @@ function ProcessingContent() {
       fontFamily: 'sans-serif',
       letterSpacing: '0.05em',
     }}>
-      Встановлення з&apos;єднання...
+      Підключення...
     </div>
   )
 }
