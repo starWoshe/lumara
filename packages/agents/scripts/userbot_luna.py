@@ -23,12 +23,25 @@ import asyncio
 import signal
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict
+from pathlib import Path
 
+# Виправлення кодування для Windows
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+
+from dotenv import load_dotenv
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.errors import FloodWaitError
 import httpx
 import anthropic
+
+# Завантажуємо .env.local з кореня проєкту
+env_path = Path(__file__).resolve().parent.parent.parent / '.env.local'
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path, override=True)
+else:
+    load_dotenv(override=True)
 
 # ── Конфігурація ──────────────────────────────────────────────────────────────
 

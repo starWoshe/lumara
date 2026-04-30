@@ -10,10 +10,24 @@ Usage:
 import os
 import sys
 import argparse
+from pathlib import Path
 
+# Виправлення кодування для Windows
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+
+from dotenv import load_dotenv
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 import httpx
+
+# Завантажуємо .env.local з кореня проєкту
+env_path = Path(__file__).resolve().parent.parent / '.env.local'
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path, override=True)
+else:
+    # Fallback на звичайний .env
+    load_dotenv(override=True)
 
 
 def get_supabase_url_key():
