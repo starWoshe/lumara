@@ -102,7 +102,7 @@ function formatDate(iso: string) {
 export default function AdminPage() {
   const { user: session, status } = useSession()
   const router = useRouter()
-  const [tab, setTab] = useState<'activity' | 'users' | 'costs' | 'limits' | 'mages'>('activity')
+  const [tab, setTab] = useState<'activity' | 'users' | 'costs' | 'limits' | 'mages' | 'userbot'>('activity')
   const [users, setUsers] = useState<User[]>([])
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -110,6 +110,7 @@ export default function AdminPage() {
   const [agentStats, setAgentStats] = useState<AgentStats | null>(null)
   const [tokenStats, setTokenStats] = useState<TokenStats | null>(null)
   const [mageActivity, setMageActivity] = useState<MageActivityItem[]>([])
+  const [userbotData, setUserbotData] = useState<{ mages: any[]; logs: any[] } | null>(null)
 
   const [settings, setSettings] = useState<AdminSettings>({
     daily_budget_usd: '10',
@@ -130,13 +131,14 @@ export default function AdminPage() {
     async function load() {
       setLoading(true)
       try {
-        const [usersRes, logsRes, statsRes, tokenRes, settingsRes, mageRes] = await Promise.all([
+        const [usersRes, logsRes, statsRes, tokenRes, settingsRes, mageRes, userbotRes] = await Promise.all([
           fetch('/api/admin/users'),
           fetch(`/api/admin/activity${selectedUser ? `?userId=${selectedUser}` : ''}`),
           fetch('/api/admin/stats'),
           fetch('/api/admin/token-stats'),
           fetch('/api/admin/settings'),
           fetch('/api/admin/mage-activity'),
+          fetch('/api/admin/userbot'),
         ])
         const usersData = await usersRes.json().catch(() => ({}))
         const logsData = await logsRes.json().catch(() => ({}))
@@ -144,11 +146,13 @@ export default function AdminPage() {
         const tokenData = await tokenRes.json().catch(() => ({}))
         const settingsData = await settingsRes.json().catch(() => ({}))
         const mageData = await mageRes.json().catch(() => ({}))
+        const userbotJson = await userbotRes.json().catch(() => null)
         setUsers(usersData.users ?? [])
         setLogs(logsData.logs ?? [])
         setAgentStats(statsData?.funnel ? statsData : null)
         setTokenStats(tokenData?.today ? tokenData : null)
         setMageActivity(mageData.items ?? [])
+        setUserbotData(userbotJson && !userbotJson.error ? userbotJson : null)
         if (settingsData && !settingsData.error && settingsData.daily_budget_usd) {
           setSettings(settingsData)
         }
@@ -249,6 +253,7 @@ export default function AdminPage() {
         <TabBtn active={tab === 'activity'} onClick={() => setTab('activity')}>Активність</TabBtn>
         <TabBtn active={tab === 'users'} onClick={() => setTab('users')}>Користувачі</TabBtn>
         <TabBtn active={tab === 'mages'} onClick={() => setTab('mages')}>🧙 Активність магів</TabBtn>
+        <TabBtn active={tab === 'userbot'} onClick={() => setTab('userbot')}>🤖 UserBot</TabBtn>
         <TabBtn active={tab === 'costs'} onClick={() => setTab('costs')}>💰 Витрати</TabBtn>
         <TabBtn active={tab === 'limits'} onClick={() => setTab('limits')}>⚙️ Ліміти</TabBtn>
       </div>
@@ -261,6 +266,8 @@ export default function AdminPage() {
         <UsersTable users={users} onSelectUser={(id) => { setSelectedUser(id); setTab('activity') }} />
       ) : tab === 'mages' ? (
         <MagesActivityTable items={mageActivity} />
+      ) : tab === 'userbot' ? (
+        <UserbotPanel data={userbotData} />
       ) : tab === 'costs' ? (
         <CostsPanel stats={tokenStats} />
       ) : (
@@ -661,6 +668,130 @@ function MagesActivityTable({ items }: { items: MageActivityItem[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+function UserbotPanel({ data }: { data: { mages: any[]; logs: any[] } | null }) {
+  if (!data) return <div className="text-white/30 text-center py-20">Немає даних UserBot</div>
+
+  const actionColors: Record<string, string> = {
+    REACTION: 'bg-pink-500/20 text-pink-300',
+    MESSAGE: 'bg-blue-500/20 text-blue-300',
+    READ: 'bg-white/10 text-white/50',
+    JOIN: 'bg-green-500/20 text-green-300',
+    ERROR: 'bg-red-500/20 text-red-300',
+  }
+  const actionLabels: Record<string, string> = {
+    REACTION: 'Реакція',
+    MESSAGE: 'Повідомлення',
+    READ: 'Читання',
+    JOIN: 'Вхід',
+    ERROR: 'Помилка',
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Статус магів */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {data.mages.map((m) => (
+          <div key={m.key} className="bg-white/5 border border-white/10 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-white">{m.name}</h3>
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/admin/userbot', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ mage: m.key.toLowerCase(), enabled: !m.enabled }),
+                    })
+                    if (res.ok) window.location.reload()
+                    else alert('Помилка зміни статусу')
+                  } catch {
+                    alert('Помилка зміни статусу')
+                  }
+                }}
+                className={`text-xs px-2.5 py-1 rounded-full transition ${
+                  m.enabled
+                    ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                    : 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
+                }`}
+              >
+                {m.enabled ? 'Вимкнути' : 'Увімкнути'}
+              </button>
+            </div>
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-white/40">Режим:</span>
+                <span className={m.enabled ? 'text-amber-300' : 'text-white/30'}>
+                  {m.enabled ? 'активний' : 'вимкнений'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/40">Реакцій:</span>
+                <span className="text-white">{m.reactions}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/40">Повідомлень:</span>
+                <span className="text-white">{m.messages}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/40">Груп:</span>
+                <span className="text-white">{m.groupsVisited}/{m.totalGroups}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Логи */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+        <h3 className="text-white/60 text-xs uppercase tracking-widest p-4 pb-2">Останні дії (сьогодні)</h3>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-white/10 text-white/40 text-xs uppercase tracking-wide">
+              <th className="text-left p-4">Час</th>
+              <th className="text-left p-4">Маг</th>
+              <th className="text-left p-4">Дія</th>
+              <th className="text-left p-4 hidden md:table-cell">Група</th>
+              <th className="text-left p-4 hidden lg:table-cell">Контекст</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.logs.length === 0 && (
+              <tr>
+                <td colSpan={5} className="p-6 text-center text-white/30">
+                  Немає даних за сьогодні
+                </td>
+              </tr>
+            )}
+            {data.logs.map((log: any) => (
+              <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                <td className="p-4 text-white/30 text-xs whitespace-nowrap">
+                  {new Date(log.created_at).toLocaleString('uk-UA')}
+                </td>
+                <td className="p-4">
+                  <span className="inline-flex items-center rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-medium text-purple-300">
+                    {log.mage}
+                  </span>
+                </td>
+                <td className="p-4">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actionColors[log.action] || 'bg-white/10 text-white/50'}`}>
+                    {actionLabels[log.action] || log.action}
+                  </span>
+                </td>
+                <td className="p-4 text-white/40 text-xs hidden md:table-cell">
+                  {log.group_username ? `@${log.group_username}` : '—'}
+                </td>
+                <td className="p-4 text-white/30 text-xs hidden lg:table-cell max-w-xs truncate">
+                  {log.message_preview || '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
