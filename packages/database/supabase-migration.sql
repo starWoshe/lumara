@@ -336,3 +336,62 @@ CREATE TABLE IF NOT EXISTS "telegram_groups" (
 CREATE INDEX IF NOT EXISTS "telegram_groups_category_idx" ON "telegram_groups"("category");
 CREATE INDEX IF NOT EXISTS "telegram_groups_is_niche_idx" ON "telegram_groups"("is_niche");
 CREATE INDEX IF NOT EXISTS "telegram_groups_last_activity_at_idx" ON "telegram_groups"("last_activity_at");
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- USERBOT таблиці (Telethon-клієнти магів)
+-- ──────────────────────────────────────────────────────────────────────────────
+
+DO $$ BEGIN
+  CREATE TYPE "UserbotAction" AS ENUM ('REACTION', 'MESSAGE', 'READ', 'JOIN', 'ERROR');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS "monitored_groups" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "group_username" TEXT NOT NULL,
+    "group_title" TEXT,
+    "category" TEXT,
+    "assigned_mage" "AgentType" NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "last_visited" TIMESTAMP(3),
+    "member_count" INTEGER,
+    "notes" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "monitored_groups_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "monitored_groups_assigned_mage_idx" ON "monitored_groups"("assigned_mage");
+CREATE INDEX IF NOT EXISTS "monitored_groups_is_active_idx" ON "monitored_groups"("is_active");
+
+CREATE TABLE IF NOT EXISTS "userbot_sessions" (
+    "mage" "AgentType" NOT NULL,
+    "session_string" TEXT NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "userbot_sessions_pkey" PRIMARY KEY ("mage")
+);
+
+CREATE TABLE IF NOT EXISTS "userbot_logs" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "mage" "AgentType" NOT NULL,
+    "action" "UserbotAction" NOT NULL,
+    "group_username" TEXT,
+    "message_preview" TEXT,
+    "metadata" JSONB,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "userbot_logs_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "userbot_logs_mage_idx" ON "userbot_logs"("mage");
+CREATE INDEX IF NOT EXISTS "userbot_logs_action_idx" ON "userbot_logs"("action");
+CREATE INDEX IF NOT EXISTS "userbot_logs_created_at_idx" ON "userbot_logs"("created_at");
+
+-- Seed: початкові групи для LUNA (прогрів)
+-- ⚠️ Перевір що group_username відповідає публічним групам (chat), не каналам!
+INSERT INTO "monitored_groups" ("group_username", "group_title", "category", "assigned_mage", "is_active", "notes")
+VALUES
+  ('astro_to_you', 'АстрологіЯ', 'астрологія', 'LUNA', true, 'Перевірити що це група, не канал'),
+  ('astrology_ukraine', 'Астрологія Україна', 'астрологія', 'LUNA', true, 'Публічна астрологічна спільнота'),
+  ('moon_women_ua', 'Місячні жінки UA', 'місячні цикли', 'LUNA', true, 'Жіноча езотерика, місячні цикли'),
+  ('womens_esoteric_ua', 'Жіноча езотерика UA', 'езотерика', 'LUNA', true, 'Жіночі кризи, саморозвиток'),
+  ('relationships_ua', 'Стосунки UA', 'стосунки', 'LUNA', true, 'Відносини, коучинг, підтримка'),
+  ('purpose_ua', 'Призначення UA', 'призначення', 'LUNA', true, 'Покликання, місія, доля'),
+  ('astrology_chat_ua', 'Астро-чат Україна', 'астрологія', 'LUNA', true, 'Загальна астрологічна дискусія')
+ON CONFLICT DO NOTHING;

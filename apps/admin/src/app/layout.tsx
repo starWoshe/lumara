@@ -28,6 +28,12 @@ export default function RootLayout({
             >
               Групи
             </a>
+            <a
+              href="/userbot"
+              className="text-sm text-gray-400 hover:text-white transition"
+            >
+              UserBot
+            </a>
           </div>
         </nav>
         {children}

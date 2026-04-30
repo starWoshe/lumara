@@ -509,3 +509,56 @@ model TelegramConversation {
   @@index([mage])
   @@map("telegram_conversations")
 }
+
+// =========================================
+// USERBOT — ТЕЛЕГРАМ-КЛІЄНТИ МАГІВ
+// =========================================
+
+model MonitoredGroup {
+  id           String    @id @default(uuid())
+  groupUsername String   @map("group_username")
+  groupTitle    String?  @map("group_title")
+  category     String?
+  assignedMage  AgentType @map("assigned_mage")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastVisited   DateTime? @map("last_visited")
+  memberCount   Int?      @map("member_count")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([assignedMage])
+  @@index([isActive])
+  @@map("monitored_groups")
+}
+
+model UserbotSession {
+  mage          AgentType @id @map("mage")
+  sessionString String    @map("session_string")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@map("userbot_sessions")
+}
+
+enum UserbotAction {
+  REACTION
+  MESSAGE
+  READ
+  JOIN
+  ERROR
+}
+
+model UserbotLog {
+  id             String        @id @default(uuid())
+  mage           AgentType
+  action         UserbotAction
+  groupUsername  String?       @map("group_username")
+  messagePreview String?       @map("message_preview")
+  metadata       Json?
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  @@index([mage])
+  @@index([action])
+  @@index([createdAt])
+  @@map("userbot_logs")
+}
