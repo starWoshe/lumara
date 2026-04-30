@@ -14,7 +14,7 @@ export async function GET() {
   // IG_ACCESS_TOKEN — читаємо дату з env або вважаємо що оновлювалась за розкладом (1-го числа)
   const igTokenStatus = (() => {
     const tokenExists = !!process.env.IG_ACCESS_TOKEN
-    if (!tokenExists) return { status: 'red', label: 'Відсутній', lastUpdated: null, nextUpdate: null }
+    if (!tokenExists) return { status: 'red', lastUpdated: null, nextUpdate: null }
 
     // Останнє оновлення: 1-го числа поточного або минулого місяця
     const lastFirst = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -28,7 +28,6 @@ export async function GET() {
 
     return {
       status,
-      label: 'Активний',
       lastUpdated: lastFirst.toISOString().split('T')[0],
       nextUpdate: nextFirst.toISOString().split('T')[0],
     }
@@ -38,7 +37,6 @@ export async function GET() {
   const stripeLiveMode = process.env.STRIPE_LIVE_MODE === 'true'
   const stripeStatus = {
     status: stripeLiveMode ? 'green' : 'yellow',
-    label: stripeLiveMode ? 'Live (увімкнено)' : 'Test / вимкнено',
     lastUpdated: null,
     nextUpdate: null,
   }
@@ -47,7 +45,6 @@ export async function GET() {
   const vercelEnv = process.env.VERCEL_ENV ?? 'unknown'
   const vercelStatus = {
     status: vercelEnv === 'production' ? 'green' : vercelEnv === 'preview' ? 'yellow' : 'green',
-    label: vercelEnv === 'production' ? 'Production' : vercelEnv === 'preview' ? 'Preview' : 'OK',
     lastUpdated: null,
     nextUpdate: null,
   }
@@ -55,7 +52,6 @@ export async function GET() {
   // Anthropic API key
   const anthropicStatus = {
     status: process.env.ANTHROPIC_API_KEY ? 'green' : 'red',
-    label: process.env.ANTHROPIC_API_KEY ? 'OK' : 'Відсутній',
     lastUpdated: null,
     nextUpdate: null,
   }
