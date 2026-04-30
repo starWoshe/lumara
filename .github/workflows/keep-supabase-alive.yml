@@ -2,8 +2,10 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    # Щодня о 08:00 UTC — до Vercel cron (09:00), щоб точно прокинулось
+    # 3 рази на день: 08:00, 14:00, 20:00 UTC — до/після Vercel cron
     - cron: '0 8 * * *'
+    - cron: '0 14 * * *'
+    - cron: '0 20 * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,18 +13,38 @@ jobs:
     name: Ping /api/health
     runs-on: ubuntu-latest
     steps:
-      - name: Штурхнути Supabase
+      - name: Штурхнути Supabase (з retry)
         run: |
-          echo "Pinging production /api/health..."
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Accept: application/json" \
-            --max-time 30 \
-            "https://lumara.fyi/api/health")
+          MAX_RETRIES=3
+          RETRY_DELAY=30
 
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Supabase is alive (HTTP 200)"
-          else
-            echo "⚠️ Unexpected response: HTTP $HTTP_CODE"
-            # Не падаємо — просто логуємо, бо база може бути в процесі пробудження
-          fi
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i/$MAX_RETRIES..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+              -H "Accept: application/json" \
+              --max-time 30 \
+              "https://lumara.fyi/api/health")
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ Supabase is alive (HTTP 200)"
+              exit 0
+            else
+              echo "⚠️ Attempt $i failed: HTTP $HTTP_CODE"
+              if [ "$i" -lt "$MAX_RETRIES" ]; then
+                echo "Retrying in ${RETRY_DELAY}s..."
+                sleep $RETRY_DELAY
+              fi
+            fi
+          done
+
+          echo "❌ All attempts failed. Supabase may need manual unpause."
+          exit 1
+
+      - name: Telegram алерт при збої
+        if: failure()
+        run: |
+          TEXT="🔴 LUMARA ALERT%0A%0AWorkflow: ${{ github.workflow }}%0AСтатус: ПОМИЛКА — Supabase не відповідає%0AЧас: $(date '+%Y-%m-%d %H:%M UTC')"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=@Volodymyr_Shemchuk" \
+            -d "text=$TEXT"
