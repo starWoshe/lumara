@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { db } from '@lumara/database'
 
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60
+
 // Типи днів публікації
  type AcademyDay = 'monday' | 'wednesday' | 'friday' | 'sunday'
 
