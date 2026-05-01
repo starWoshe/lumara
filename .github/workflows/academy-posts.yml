@@ -42,14 +42,20 @@ jobs:
       - name: Опублікувати пост через API
         if: steps.day.outputs.day != 'unknown'
         run: |
-          curl -sfSL -X GET \
+          HTTP_CODE=$(curl -sSL -w "%{http_code}" -X GET \
             "https://lumara.fyi/api/academy/post?day=${{ steps.day.outputs.day }}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Accept: application/json" \
             --max-time 60 \
-            -o response.json
+            -o response.json)
 
+          echo "HTTP код: $HTTP_CODE"
           cat response.json
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Помилка API: HTTP $HTTP_CODE"
+            exit 1
+          fi
 
           # Перевіряємо що відповідь ok
           if [ "$(jq -r '.ok' response.json)" != "true" ]; then

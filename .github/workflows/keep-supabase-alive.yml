@@ -18,6 +18,13 @@ jobs:
           MAX_RETRIES=3
           RETRY_DELAY=30
 
+          SECRET_LEN=${#CRON_SECRET}
+          if [ "$SECRET_LEN" -eq 0 ]; then
+            echo "⚠️ CRON_SECRET не встановлено в GitHub Secrets!"
+          else
+            echo "✅ CRON_SECRET встановлено (довжина: $SECRET_LEN символів)"
+          fi
+
           for i in $(seq 1 $MAX_RETRIES); do
             echo "Attempt $i/$MAX_RETRIES..."
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
