@@ -94,20 +94,27 @@ function getOnboardingContext(agentType: AgentType, profile?: ProfileLike): stri
   return parts.join('\n')
 }
 
+export interface SystemPromptBlock {
+  type: 'text'
+  text: string
+  cache_control?: { type: 'ephemeral' }
+}
+
+type PromptOptions = {
+  includeMonetization?: boolean
+  crossPromoVariant?: 'peer' | 'academy'
+  announcementContext?: string
+  academyDisclosureLevel?: number
+  academyRevealedBy?: string[]
+  profile?: ProfileLike
+}
+
 export function getAgentSystemPrompt(
   agentType: AgentType,
-  options?: {
-    includeMonetization?: boolean
-    crossPromoVariant?: 'peer' | 'academy'
-    announcementContext?: string
-    academyDisclosureLevel?: number
-    academyRevealedBy?: string[]
-    profile?: ProfileLike
-  }
+  options?: PromptOptions
 ): string {
   const parts: string[] = []
 
-  // Підставляємо academy змінні в global prompt
   const academyCtx = getAcademyContext(
     options?.academyDisclosureLevel ?? 0,
     options?.academyRevealedBy ?? []
@@ -134,10 +141,55 @@ export function getAgentSystemPrompt(
     parts.push(options.announcementContext)
   }
 
-  // Додаємо onboarding контекст
   parts.push(getOnboardingContext(agentType, options?.profile))
 
   return parts.join('\n\n')
+}
+
+// Повертає system prompt як масив блоків з cache_control для економії токенів.
+// Блок 1 (статичний): globalPrompt + agentPrompt → кешується на 5 хв.
+// Блок 2 (динамічний): монетизація, анонс, onboarding, профіль → не кешується.
+export function getAgentSystemPromptBlocks(
+  agentType: AgentType,
+  options?: PromptOptions & { profileContext?: string }
+): SystemPromptBlock[] {
+  const academyCtx = getAcademyContext(
+    options?.academyDisclosureLevel ?? 0,
+    options?.academyRevealedBy ?? []
+  )
+  const agentPrompt = agentSystemPrompts[agentType] ?? ''
+  const staticText = [academyCtx, agentPrompt].filter(Boolean).join('\n\n')
+
+  const dynamicParts: string[] = []
+  if (options?.includeMonetization && monetizationTriggerTemplate) {
+    dynamicParts.push(`\n---\n${monetizationTriggerTemplate}\n---`)
+  }
+  if (options?.crossPromoVariant === 'peer' && crossPromoMap[agentType]) {
+    dynamicParts.push(
+      `\n---\nCross-promotion instruction: naturally insert the following at the end of your response:\n"${crossPromoMap[agentType]}"\n---`
+    )
+  }
+  if (options?.crossPromoVariant === 'academy' && academyPromoMap[agentType]) {
+    dynamicParts.push(
+      `\n---\nAcademy promotion instruction: naturally insert the following at the end of your response:\n"${academyPromoMap[agentType]}"\n---`
+    )
+  }
+  if (options?.announcementContext) {
+    dynamicParts.push(options.announcementContext)
+  }
+  dynamicParts.push(getOnboardingContext(agentType, options?.profile))
+  if (options?.profileContext) {
+    dynamicParts.push(options.profileContext)
+  }
+  const dynamicText = dynamicParts.filter(Boolean).join('\n\n')
+
+  const blocks: SystemPromptBlock[] = [
+    { type: 'text', text: staticText, cache_control: { type: 'ephemeral' } },
+  ]
+  if (dynamicText.trim()) {
+    blocks.push({ type: 'text', text: dynamicText })
+  }
+  return blocks
 }
 
 export function getAgentInstagramPrompt(agentType: AgentType): string {

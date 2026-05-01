@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getAgentSystemPrompt, type AgentType } from '@lumara/agents'
+import { getAgentSystemPromptBlocks, type AgentType, type SystemPromptBlock } from '@lumara/agents'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
       return sseStream(REGISTRATION_INVITES[agentType], true)
     }
 
-    const systemPrompt = getAgentSystemPrompt(agentType)
+    const systemBlocks = getAgentSystemPromptBlocks(agentType)
 
     const history = messages.map((m) => ({
       role: m.role as 'user' | 'assistant',
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 600,
-      system: systemPrompt,
+      system: systemBlocks as SystemPromptBlock[],
       messages: history,
     })
 

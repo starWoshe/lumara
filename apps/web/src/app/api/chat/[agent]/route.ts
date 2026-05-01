@@ -4,9 +4,10 @@ import { db } from '@lumara/database'
 import {
   AgentType,
   AGENT_TOKEN_LIMITS,
-  getAgentSystemPrompt,
+  getAgentSystemPromptBlocks,
   getAgentFirstMessage,
   type ProfileLike,
+  type SystemPromptBlock,
 } from '@lumara/agents'
 import { sendMessageSchema } from '@lumara/shared'
 import { FREE_MESSAGES_LIMIT, PLANS } from '@/lib/stripe'
@@ -358,15 +359,15 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
     })
     const announcementCtx = await buildAnnouncementContext(userId, agentType, userExchanges)
 
-    const basePrompt = getAgentSystemPrompt(agentType, {
+    const systemBlocks = getAgentSystemPromptBlocks(agentType, {
       includeMonetization,
       crossPromoVariant,
       announcementContext: announcementCtx.context,
       academyDisclosureLevel: profile?.academyDisclosureLevel ?? 0,
       academyRevealedBy: (profile?.academyRevealedBy as string[]) ?? [],
       profile: profile as ProfileLike | undefined,
+      profileContext,
     })
-    const systemPrompt = basePrompt + profileContext
     const tokenLimit = AGENT_TOKEN_LIMITS[agentType]
 
     const messages = previousMessages.map((m) => ({
@@ -383,7 +384,7 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
         anthropic.messages.create({
           model: aiModel,
           max_tokens: tokenLimit,
-          system: systemPrompt,
+          system: systemBlocks as SystemPromptBlock[],
           messages,
         })
       )
@@ -395,16 +396,18 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
       // Логуємо витрати токенів + перевірка алертів (async, не блокуємо відповідь)
       const tokIn = response.usage.input_tokens
       const tokOut = response.usage.output_tokens
+      const tokCacheRead = (response.usage as { cache_read_input_tokens?: number }).cache_read_input_tokens ?? 0
+      const tokCacheWrite = (response.usage as { cache_creation_input_tokens?: number }).cache_creation_input_tokens ?? 0
       db.tokenUsage.create({
         data: {
           userId,
           agent: agentType,
           actionType: 'chat',
           model: aiModel,
-          tokensInput: tokIn,
+          tokensInput: tokIn + tokCacheRead + tokCacheWrite,
           tokensOutput: tokOut,
-          tokensTotal: tokIn + tokOut,
-          costUsd: calcCostUsd(aiModel, tokIn, tokOut),
+          tokensTotal: tokIn + tokCacheRead + tokCacheWrite + tokOut,
+          costUsd: calcCostUsd(aiModel, tokIn + tokCacheRead + tokCacheWrite, tokOut, tokCacheRead, tokCacheWrite),
         },
       }).then(() => checkTokenAlerts(agentType!)).catch(() => {})
 
