@@ -34,6 +34,7 @@ export async function middleware(request: NextRequest) {
     '/', '/login', '/pricing', '/mages', '/links', '/chat',
     '/api/auth', '/api/stripe/webhook', '/auth',
     '/api/cron', '/api/academy', '/api/chat/guest',
+    '/api/health', '/api/telegram/webhook',
   ]
   const isPublic = publicPaths.some((p) => path === p || path.startsWith(p + '/'))
 
