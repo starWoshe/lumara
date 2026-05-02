@@ -80,6 +80,96 @@ function isValidDate(d: Date): boolean {
   return d instanceof Date && !isNaN(d.getTime())
 }
 
+// ── Автоекстракція даних профілю з діалогу ────────────────────────────────────
+
+const UA_MONTHS: Record<string, number> = {
+  'січня': 1, 'лютого': 2, 'березня': 3, 'квітня': 4, 'травня': 5,
+  'червня': 6, 'липня': 7, 'серпня': 8, 'вересня': 9, 'жовтня': 10,
+  'листопада': 11, 'грудня': 12,
+}
+
+function isAskingForName(text: string): boolean {
+  return /звати|ім.я|назви\s+себе|як\s+тебе\s+звуть|your\s+name|dein\s+name|imię/i.test(text)
+}
+
+function isAskingForDate(text: string): boolean {
+  return /народи|дата\s+народження|коли\s+ти\s+народи|date\s+of\s+birth|birthday|geboren/i.test(text)
+}
+
+function isAskingForPlace(text: string): boolean {
+  return /де\s+ти\s+народи|місто\s+народ|місце\s+народ|where.*born|geburtsort/i.test(text)
+}
+
+function extractName(text: string): string | null {
+  let cleaned = text.trim()
+    .replace(/^(мене\s+звати|я\s+[-—]\s*|меня\s+зовут|my\s+name\s+is\s*|ich\s+heiße\s*|ich\s+bin\s*)/i, '')
+    .replace(/[.,!?].*$/, '')
+    .trim()
+  if (cleaned.length < 2 || cleaned.length > 60) return null
+  if (/\d/.test(cleaned)) return null
+  if (!/^[\p{L}\s\-'ʼʹ]+$/u.test(cleaned)) return null
+  const words = cleaned.split(/\s+/)
+  if (words.length > 4) return null
+  return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+function extractBirthDate(text: string): Date | null {
+  // DD.MM.YYYY  DD/MM/YYYY  DD-MM-YYYY
+  const numMatch = text.match(/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})/)
+  if (numMatch) {
+    const d = new Date(`${numMatch[3]}-${numMatch[2].padStart(2, '0')}-${numMatch[1].padStart(2, '0')}`)
+    if (isValidDate(d) && d.getFullYear() > 1900 && d.getFullYear() <= new Date().getFullYear()) return d
+  }
+  // ISO YYYY-MM-DD
+  const isoMatch = text.match(/(\d{4})-(\d{2})-(\d{2})/)
+  if (isoMatch) {
+    const d = new Date(isoMatch[0])
+    if (isValidDate(d) && d.getFullYear() > 1900) return d
+  }
+  // "1 квітня 1995"
+  for (const [monthName, monthNum] of Object.entries(UA_MONTHS)) {
+    const re = new RegExp(`(\\d{1,2})\\s+${monthName}\\s+(\\d{4})`, 'i')
+    const m = text.match(re)
+    if (m) {
+      const d = new Date(`${m[2]}-${String(monthNum).padStart(2, '0')}-${m[1].padStart(2, '0')}`)
+      if (isValidDate(d) && d.getFullYear() > 1900) return d
+    }
+  }
+  return null
+}
+
+async function tryExtractProfileData(
+  userId: string,
+  profile: Record<string, unknown> | null,
+  agentType: AgentType,
+  userMessage: string,
+  prevAssistantMessage: string,
+): Promise<void> {
+  if (!profile) return
+  const updates: Record<string, unknown> = {}
+
+  if (!profile.fullName && isAskingForName(prevAssistantMessage)) {
+    const name = extractName(userMessage)
+    if (name) updates.fullName = name
+  }
+
+  if (!profile.birthDate && isAskingForDate(prevAssistantMessage)) {
+    const date = extractBirthDate(userMessage)
+    if (date) updates.birthDate = date
+  }
+
+  if (!profile.birthPlace && ['LUNA', 'NUMI'].includes(agentType) && isAskingForPlace(prevAssistantMessage)) {
+    const place = userMessage.trim().replace(/[.,!?].*$/, '').trim()
+    if (place.length >= 2 && place.length <= 100 && !/[\d]/.test(place)) {
+      updates.birthPlace = place
+    }
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await db.profile.update({ where: { userId }, data: updates }).catch(() => {})
+  }
+}
+
 const ANNOUNCEMENT_MIN_EXCHANGES = 5   // скільки обмінів до першого анонсу
 const ANNOUNCEMENT_GAP = 3             // мінімальний інтервал між шарами
 const ANNOUNCEMENT_MAX_LAYERS = 3      // всього 3 шари на агента
@@ -314,7 +404,18 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
       data: { userId, action: 'MESSAGE_SENT', metadata: { agent: agentType, conversationId: conversation.id } },
     }).catch(() => {})
 
-    const profile = await db.profile.findUnique({ where: { userId } })
+    let profile = await db.profile.findUnique({ where: { userId } })
+
+    // --- Автоекстракція даних профілю з діалогу ---
+    const prevMsgs = conversation.messages ?? []
+    const lastAssistant = [...prevMsgs].reverse().find((m) => m.role === 'ASSISTANT')?.content ?? ''
+    if (lastAssistant) {
+      await tryExtractProfileData(
+        userId, profile as Record<string, unknown> | null, agentType, content, lastAssistant
+      )
+      // Перезавантажуємо профіль якщо були оновлення
+      profile = await db.profile.findUnique({ where: { userId } })
+    }
 
     // --- Академія Лумара: оновлення рівня розкриття ---
     let disclosureLevel = profile?.academyDisclosureLevel ?? 0
