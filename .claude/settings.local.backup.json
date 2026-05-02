@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": [
+    "notebooklm",
+    "claude-flow"
+  ]
+}
