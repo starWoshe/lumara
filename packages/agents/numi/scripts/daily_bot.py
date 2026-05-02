@@ -305,6 +305,13 @@ def save_artifact(image_bytes: bytes, instagram_text: str, day_number: int, date
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
+    print('🔍 ENV DIAGNOSTICS (daily_bot.py):')
+    for k in sorted(os.environ.keys()):
+        if any(x in k for x in ['ANTHROPIC', 'OPENAI', 'NUMI', 'LUMARA', 'IG_', 'TELEGRAM']):
+            val = os.environ[k]
+            print(f'  {k}: present (length {len(val)}, truthy={bool(val)})')
+    print('---')
+
     required_env = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'NUMI_PAGE_ACCESS_TOKEN', 'NUMI_PAGE_ID']
     missing = [v for v in required_env if not os.environ.get(v)]
     if missing:

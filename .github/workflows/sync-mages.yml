@@ -169,7 +169,7 @@ jobs:
             local value="$2"
             if [ -n "$value" ]; then
               echo "$value" | gh secret set "$name" --repo "$REPO"
-              echo "  ✅ Secret $name set"
+              echo "  ✅ Secret $name set (length: ${#value})"
             else
               echo "  ⚠️ Secret $name is empty, skipping"
             fi
@@ -195,4 +195,27 @@ jobs:
           set_secret "FACEBOOK_MAX_PER_DAY" "${{ secrets.FACEBOOK_MAX_PER_DAY || '15' }}"
 
           echo "✅ Secrets synced to $REPO"
+
+          # ── Діагностика: перевірка секретів у цільовому репозиторії ──
+          echo ""
+          echo "🔍 Діагностика: перевірка секретів у $REPO"
+          set +e
+          secret_list=$(gh secret list --repo "$REPO" 2>/dev/null)
+          list_exit_code=$?
+          set -e
+
+          if [ $list_exit_code -ne 0 ] || [ -z "$secret_list" ]; then
+            echo "  ⚠️ Не вдалося отримати список секретів з $REPO (код: $list_exit_code)"
+          else
+            echo "$secret_list"
+            echo ""
+            echo "📋 Перевірка критичних секретів для $MAGE:"
+            for required in "ANTHROPIC_API_KEY" "OPENAI_API_KEY" "${MAGE^^}_PAGE_ACCESS_TOKEN" "${MAGE^^}_PAGE_ID" "${MAGE^^}_IG_USER_ID" "${MAGE^^}_TELEGRAM_BOT_TOKEN" "${MAGE^^}_TELEGRAM_CHANNEL_ID"; do
+              if echo "$secret_list" | grep -q "^$required[[:space:]]"; then
+                echo "  ✅ $required — присутній"
+              else
+                echo "  ❌ $required — ВІДСУТНІЙ (daily_bot.py може впасти)"
+              fi
+            done
+          fi
 
