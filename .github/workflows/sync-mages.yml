@@ -126,9 +126,15 @@ jobs:
             "sync: meta publisher"
 
           # ── Mage-specific daily bot scripts ──
-          upload_file "packages/agents/$MAGE/scripts/daily_bot.py" \
-            "packages/agents/$MAGE/scripts/daily_bot.py" \
-            "sync: daily bot"
+          if [ "$MAGE" = "luna" ] && [ -f "packages/agents/luna/scripts/telegram_bot.py" ]; then
+            upload_file "packages/agents/luna/scripts/telegram_bot.py" \
+              "packages/agents/luna/scripts/telegram_bot.py" \
+              "sync: telegram bot"
+          else
+            upload_file "packages/agents/$MAGE/scripts/daily_bot.py" \
+              "packages/agents/$MAGE/scripts/daily_bot.py" \
+              "sync: daily bot"
+          fi
 
           if [ -f "packages/agents/$MAGE/scripts/requirements.txt" ]; then
             upload_file "packages/agents/$MAGE/scripts/requirements.txt" \
