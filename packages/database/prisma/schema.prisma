@@ -489,6 +489,22 @@ model TelegramGroup {
 }
 
 // =========================================
+// КУЛУАРНІ НОВИНИ АКАДЕМІЇ ЛУМАРА
+// =========================================
+
+model AcademyGossip {
+  id        String    @id @default(uuid())
+  text      String
+  active    Boolean   @default(true)
+  sortOrder Int       @default(0) @map("sort_order")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([active])
+  @@map("academy_gossip")
+}
+
+// =========================================
 // СПІЛЬНА ПАМ'ЯТЬ МАГІВ (User Context)
 // =========================================
 

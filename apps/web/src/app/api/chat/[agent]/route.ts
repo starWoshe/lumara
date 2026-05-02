@@ -361,14 +361,28 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
     })
     const announcementCtx = await buildAnnouncementContext(userId, agentType, userExchanges)
 
+    const disclosureLevel = profile?.academyDisclosureLevel ?? 0
+    let gossipContext: string | undefined
+    if (disclosureLevel >= 1) {
+      const gossips = await db.academyGossip.findMany({
+        where: { active: true },
+        orderBy: { sortOrder: 'asc' },
+        select: { text: true },
+      })
+      if (gossips.length > 0) {
+        gossipContext = gossips.map((g) => `- ${g.text}`).join('\n')
+      }
+    }
+
     const systemBlocks = getAgentSystemPromptBlocks(agentType, {
       includeMonetization,
       crossPromoVariant,
       announcementContext: announcementCtx.context,
-      academyDisclosureLevel: profile?.academyDisclosureLevel ?? 0,
+      academyDisclosureLevel: disclosureLevel,
       academyRevealedBy: (profile?.academyRevealedBy as string[]) ?? [],
       profile: profile as ProfileLike | undefined,
       profileContext,
+      gossipContext,
     })
     const tokenLimit = AGENT_TOKEN_LIMITS[agentType]
 
@@ -429,6 +443,7 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
           },
         }).catch(() => {})
       }
+
     } catch (apiErr) {
 
       return sseResponse(getAgentErrorMessage(agentType), '')

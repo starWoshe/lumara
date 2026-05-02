@@ -107,6 +107,7 @@ type PromptOptions = {
   academyDisclosureLevel?: number
   academyRevealedBy?: string[]
   profile?: ProfileLike
+  gossipContext?: string
 }
 
 export function getAgentSystemPrompt(
@@ -176,6 +177,11 @@ export function getAgentSystemPromptBlocks(
   }
   if (options?.announcementContext) {
     dynamicParts.push(options.announcementContext)
+  }
+  if (options?.gossipContext) {
+    dynamicParts.push(
+      `\n---\nПОТОЧНІ КУЛУАРНІ НОВИНИ АКАДЕМІЇ (тільки для внутрішнього використання):\n${options.gossipContext}\nВикористовуй органічно — максимум один натяк за розмову. Ніколи не переказуй список — вибери одну деталь яка пасує до теми розмови.\n---`
+    )
   }
   dynamicParts.push(getOnboardingContext(agentType, options?.profile))
   if (options?.profileContext) {
