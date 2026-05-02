@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@lumara/database'
+import { getSessionFromStore, setSessionInStore } from './session-store'
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'woshem68@gmail.com'
 
@@ -12,10 +13,15 @@ export type SessionUser = {
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
+  const cached = getSessionFromStore()
+  if (cached !== undefined) return cached
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user?.email) return null
+  if (!user?.email) {
+    setSessionInStore(null)
+    return null
+  }
 
   const name =
     (user.user_metadata?.full_name as string | undefined)
@@ -48,13 +54,15 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
       // Адміністратор завжди має роль ADMIN, навіть якщо в БД записано інакше
       const effectiveRole = dbUser.role === 'ADMIN' || isAdmin ? 'ADMIN' : 'USER'
-      return {
+      const result = {
         id: dbUser.id,
         email: dbUser.email,
         name: dbUser.name,
         image: dbUser.image,
         role: effectiveRole,
       }
+      setSessionInStore(result)
+      return result
     }
 
     // Юзер не існує — створюємо з Supabase Auth UUID
@@ -66,13 +74,15 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       update: {},
       create: { userId: newUser.id, language: 'uk', timezone: 'Europe/Kiev', academyDisclosureLevel: 1 },
     })
-    return {
+    const result = {
       id: newUser.id,
       email: newUser.email,
       name: newUser.name,
       image: newUser.image,
       role: newUser.role,
     }
+    setSessionInStore(result)
+    return result
   } catch (err) {
 
     // Якщо create впав — спробуємо знайти користувача ще раз
@@ -81,15 +91,19 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       ?? await db.user.findFirst({ where: { email: user.email } }).catch(() => null)
     if (fallbackUser) {
       const effectiveRole = fallbackUser.role === 'ADMIN' || isAdmin ? 'ADMIN' : 'USER'
-      return {
+      const result = {
         id: fallbackUser.id,
         email: fallbackUser.email,
         name: fallbackUser.name,
         image: fallbackUser.image,
         role: effectiveRole,
       }
+      setSessionInStore(result)
+      return result
     }
     // Останній fallback — повертаємо Supabase Auth id (може не існувати в БД)
-    return { id: user.id, email: user.email, name, image, role }
+    const fallbackResult = { id: user.id, email: user.email, name, image, role }
+    setSessionInStore(fallbackResult)
+    return fallbackResult
   }
 }

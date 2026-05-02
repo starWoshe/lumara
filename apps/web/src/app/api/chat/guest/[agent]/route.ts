@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { withSessionStore } from '@/lib/session-store'
 import { getAgentSystemPromptBlocks, type AgentType, type SystemPromptBlock } from '@lumara/agents'
 
 export const dynamic = 'force-dynamic'
@@ -66,7 +67,8 @@ function sseStream(text: string, registrationNeeded = false) {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { agent: string } }) {
-  try {
+  return withSessionStore(async () => {
+    try {
     const agentParam = params.agent.toUpperCase()
     if (!['LUNA', 'ARCAS', 'NUMI', 'UMBRA'].includes(agentParam)) {
       return sseStream('Невідомий маг.')
@@ -141,4 +143,5 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
   } catch {
     return sseStream('Щось пішло не так. Спробуй ще раз.')
   }
+  })
 }

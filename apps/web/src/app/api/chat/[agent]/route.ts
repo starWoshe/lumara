@@ -1,4 +1,5 @@
 import { getSessionUser } from '@/lib/auth'
+import { withSessionStore } from '@/lib/session-store'
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@lumara/database'
 import {
@@ -173,8 +174,9 @@ function sseResponse(text: string, conversationId: string) {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { agent: string } }) {
-  let agentType: AgentType | undefined
-  try {
+  return withSessionStore(async () => {
+    let agentType: AgentType | undefined
+    try {
     const session = await getSessionUser()
     if (!session?.id) {
       throw new Error('Не авторизовано')
@@ -445,4 +447,5 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
 
     return sseResponse(getAgentErrorMessage(agentType), '')
   }
+  })
 }
