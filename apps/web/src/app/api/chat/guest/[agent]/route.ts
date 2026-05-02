@@ -7,6 +7,13 @@ export const maxDuration = 60
 
 const GUEST_MESSAGE_LIMIT = 3
 
+const ACADEMY_KNOWLEDGE_CODES = [
+  'LUNA:wolf_vision',
+  'ARCAS:shaman_card',
+  'NUMI:cycle_nine',
+  'UMBRA:beekeeper_shadow',
+] as const
+
 const GUEST_FIRST_MESSAGES: Record<AgentType, Record<string, string>> = {
   LUNA: {
     instagram: 'Я побачила тебе в Instagram — і зірки щось сказали одразу.\n\nЦе не випадково, що ти тут.\n\nНапиши мені свою дату народження — і я відкрию тобі те, що ти давно відчуваєш, але не можеш назвати словами.',
@@ -48,12 +55,12 @@ async function getAnthropicClient() {
   return new Anthropic({ apiKey })
 }
 
-function sseStream(text: string, registrationNeeded = false) {
+function sseStream(text: string, registrationNeeded = false, revealedCode?: string) {
   const encoder = new TextEncoder()
   const readable = new ReadableStream({
     start(controller) {
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`))
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, registrationNeeded })}\n\n`))
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, registrationNeeded, revealedCode })}\n\n`))
       controller.close()
     },
   })
@@ -139,7 +146,8 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
       ? responseText + REGISTRATION_INVITES[agentType]
       : responseText
 
-    return sseStream(finalText, isLastGuestMessage)
+    const revealedCode = ACADEMY_KNOWLEDGE_CODES.find(code => responseText.includes(code))
+    return sseStream(finalText, isLastGuestMessage, revealedCode)
   } catch {
     return sseStream('Щось пішло не так. Спробуй ще раз.')
   }

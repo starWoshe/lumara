@@ -235,6 +235,7 @@ function ChatPageInner() {
   const [isGuest, setIsGuest] = useState<boolean | null>(null) // null = перевіряємо
   const [guestCount, setGuestCount] = useState(0)
   const [showLoginCta, setShowLoginCta] = useState(false)
+  const [guestRevealedCodes, setGuestRevealedCodes] = useState<string[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -249,6 +250,14 @@ function ChatPageInner() {
           setMessages(parsed.messages)
           setConversationId(parsed.conversationId)
           setHasInitiated(true)
+        }
+        // Переносимо розкриті коди знання в профіль після реєстрації
+        if (Array.isArray(parsed.revealedCodes) && parsed.revealedCodes.length > 0) {
+          fetch('/api/profile/transfer-guest-codes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ revealedCodes: parsed.revealedCodes }),
+          }).catch(() => {})
         }
         localStorage.removeItem('lumara_guest_session')
       } catch {
@@ -370,6 +379,7 @@ function ChatPageInner() {
       const decoder = new TextDecoder()
       let assistantMessage = ''
       let registrationNeeded = false
+      let revealedCodeThisMsg: string | undefined
 
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
 
@@ -390,21 +400,33 @@ function ChatPageInner() {
           }
           if (data.conversationId) setConversationId(data.conversationId)
           if (data.registrationNeeded) registrationNeeded = true
+          if (data.revealedCode && typeof data.revealedCode === 'string') {
+            revealedCodeThisMsg = data.revealedCode
+          }
         }
       }
 
       if (isGuest) {
+        // Оновлюємо стан розкритих кодів
+        if (revealedCodeThisMsg && !guestRevealedCodes.includes(revealedCodeThisMsg)) {
+          setGuestRevealedCodes((prev) => [...prev, revealedCodeThisMsg!])
+        }
+
         const newCount = guestCount + 1
         setGuestCount(newCount)
         if (registrationNeeded || newCount >= 3) {
           setShowLoginCta(true)
           // Зберігаємо гостьову сесію для відновлення після реєстрації
           const updatedMessages = [...newMessages, { role: 'assistant' as const, content: assistantMessage }]
+          const allRevealedCodes = revealedCodeThisMsg && !guestRevealedCodes.includes(revealedCodeThisMsg)
+            ? [...guestRevealedCodes, revealedCodeThisMsg]
+            : guestRevealedCodes
           localStorage.setItem('lumara_guest_session', JSON.stringify({
             agent: agentType.toLowerCase(),
             messages: updatedMessages,
             utmSource,
             utmKeyword,
+            revealedCodes: allRevealedCodes,
           }))
         }
       }
