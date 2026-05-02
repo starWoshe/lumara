@@ -339,8 +339,6 @@ def main():
 
     # 5. Публікація в Telegram
     publish_to_telegram(image_url, post_text, bot_token, channel_id, 'Канал 1')
-    if channel_id_2:
-        publish_to_telegram(image_url, post_text, bot_token, channel_id_2, 'Канал 2')
     print()
 
     # 6. Публікація в Meta (Facebook + Instagram + Threads)
@@ -351,7 +349,7 @@ def main():
             facebook_text=post_text,
             instagram_caption=instagram_caption,
             image_url=image_url,
-            also_post_to_lumara=True,
+            also_post_to_lumara=False,
         )
     print()
 
