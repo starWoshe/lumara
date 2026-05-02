@@ -35,6 +35,12 @@ export default function RootLayout({
               UserBot
             </a>
             <a
+              href="/gossip"
+              className="text-sm text-gray-400 hover:text-white transition"
+            >
+              Плітки
+            </a>
+            <a
               href="/health"
               className="text-sm text-gray-400 hover:text-white transition"
             >
