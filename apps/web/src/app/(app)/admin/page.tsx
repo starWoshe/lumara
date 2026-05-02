@@ -53,6 +53,13 @@ type AdminSettings = {
   alert_red_tokens_per_hour: string
 }
 
+type GossipItem = {
+  id: string
+  text: string
+  active: boolean
+  sortOrder: number
+}
+
 type ActivityLog = {
   id: string
   action: string
@@ -102,7 +109,7 @@ function formatDate(iso: string) {
 export default function AdminPage() {
   const { user: session, status } = useSession()
   const router = useRouter()
-  const [tab, setTab] = useState<'activity' | 'users' | 'costs' | 'limits' | 'mages' | 'userbot'>('activity')
+  const [tab, setTab] = useState<'activity' | 'users' | 'costs' | 'limits' | 'mages' | 'userbot' | 'gossip'>('activity')
   const [users, setUsers] = useState<User[]>([])
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -111,6 +118,13 @@ export default function AdminPage() {
   const [tokenStats, setTokenStats] = useState<TokenStats | null>(null)
   const [mageActivity, setMageActivity] = useState<MageActivityItem[]>([])
   const [userbotData, setUserbotData] = useState<{ mages: any[]; logs: any[] } | null>(null)
+  const [gossipItems, setGossipItems] = useState<GossipItem[]>([])
+
+  async function loadGossip() {
+    const res = await fetch('/api/admin/gossip')
+    const data = await res.json()
+    if (Array.isArray(data)) setGossipItems(data)
+  }
 
   const [settings, setSettings] = useState<AdminSettings>({
     daily_budget_usd: '10',
@@ -164,6 +178,10 @@ export default function AdminPage() {
     }
     load()
   }, [selectedUser, status, session])
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.role === 'ADMIN') loadGossip()
+  }, [status, session])
 
   if (status === 'loading' || !session || session.role !== 'ADMIN') {
     return null
@@ -256,6 +274,7 @@ export default function AdminPage() {
         <TabBtn active={tab === 'userbot'} onClick={() => setTab('userbot')}>🤖 UserBot</TabBtn>
         <TabBtn active={tab === 'costs'} onClick={() => setTab('costs')}>💰 Витрати</TabBtn>
         <TabBtn active={tab === 'limits'} onClick={() => setTab('limits')}>⚙️ Ліміти</TabBtn>
+        <TabBtn active={tab === 'gossip'} onClick={() => setTab('gossip')}>📣 Плітки</TabBtn>
       </div>
 
       {loading ? (
@@ -270,6 +289,8 @@ export default function AdminPage() {
         <UserbotPanel data={userbotData} />
       ) : tab === 'costs' ? (
         <CostsPanel stats={tokenStats} />
+      ) : tab === 'gossip' ? (
+        <GossipPanel items={gossipItems} onReload={loadGossip} />
       ) : (
         <LimitsPanel
           settings={settings}
@@ -809,6 +830,151 @@ function LimitField({ label, hint, value, onChange }: {
         className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white text-sm focus:outline-none focus:border-lumara-500/50 transition-all"
       />
       <p className="text-white/30 text-xs mt-1">{hint}</p>
+    </div>
+  )
+}
+
+// ---- Плітки Академії ----
+
+function GossipPanel({ items, onReload }: { items: GossipItem[]; onReload: () => void }) {
+  const [newText, setNewText] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+
+  async function add() {
+    const text = newText.trim()
+    if (!text) return
+    await fetch('/api/admin/gossip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    })
+    setNewText('')
+    onReload()
+  }
+
+  async function toggleActive(item: GossipItem) {
+    await fetch(`/api/admin/gossip/${item.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: !item.active }),
+    })
+    onReload()
+  }
+
+  async function remove(id: string) {
+    if (!confirm('Видалити?')) return
+    await fetch(`/api/admin/gossip/${id}`, { method: 'DELETE' })
+    onReload()
+  }
+
+  async function saveEdit(id: string) {
+    const text = editText.trim()
+    if (!text) return
+    await fetch(`/api/admin/gossip/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    })
+    setEditingId(null)
+    onReload()
+  }
+
+  async function move(item: GossipItem, dir: -1 | 1) {
+    const idx = items.findIndex(i => i.id === item.id)
+    const target = items[idx + dir]
+    if (!target) return
+    await Promise.all([
+      fetch(`/api/admin/gossip/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sortOrder: target.sortOrder }),
+      }),
+      fetch(`/api/admin/gossip/${target.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sortOrder: item.sortOrder }),
+      }),
+    ])
+    onReload()
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h2 className="text-white text-sm font-semibold mb-1">Плітки Академії</h2>
+        <p className="text-white/30 text-xs">Маги вплітають ці фрази органічно в розмови (рівень 1+). Оновлюй щомісяця.</p>
+      </div>
+
+      {/* Форма додавання */}
+      <div className="flex gap-3">
+        <textarea
+          className="flex-1 rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-lumara-500/50 resize-none"
+          rows={2}
+          placeholder="Новий пліт академії..."
+          value={newText}
+          onChange={e => setNewText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); add() } }}
+        />
+        <button
+          onClick={add}
+          className="px-5 rounded-xl bg-lumara-600 hover:bg-lumara-500 text-white text-sm font-medium transition-all"
+        >
+          Додати
+        </button>
+      </div>
+
+      {/* Список */}
+      {items.length === 0 ? (
+        <p className="text-white/20 text-sm text-center py-10">Плітків ще немає. Додай перший.</p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((item, idx) => (
+            <div
+              key={item.id}
+              className={`rounded-xl border p-4 transition-all ${
+                item.active ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'
+              }`}
+            >
+              {editingId === item.id ? (
+                <div className="flex gap-2">
+                  <textarea
+                    className="flex-1 rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white focus:outline-none resize-none"
+                    rows={2}
+                    value={editText}
+                    onChange={e => setEditText(e.target.value)}
+                    autoFocus
+                  />
+                  <div className="flex flex-col gap-1.5">
+                    <button onClick={() => saveEdit(item.id)} className="px-3 py-1.5 bg-lumara-600 hover:bg-lumara-500 rounded-lg text-xs font-medium transition-all">Зберегти</button>
+                    <button onClick={() => setEditingId(null)} className="px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded-lg text-xs text-white/50 transition-all">Скасувати</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3">
+                  <div className="flex flex-col gap-1 pt-0.5 shrink-0">
+                    <button onClick={() => move(item, -1)} disabled={idx === 0} className="text-white/20 hover:text-white/60 disabled:opacity-20 text-xs">▲</button>
+                    <button onClick={() => move(item, 1)} disabled={idx === items.length - 1} className="text-white/20 hover:text-white/60 disabled:opacity-20 text-xs">▼</button>
+                  </div>
+                  <p className="flex-1 text-sm text-white/70 leading-relaxed">{item.text}</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => toggleActive(item)}
+                      className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all ${
+                        item.active ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-white/10 text-white/30 hover:bg-white/15'
+                      }`}
+                    >
+                      {item.active ? 'Активний' : 'Вимкнено'}
+                    </button>
+                    <button onClick={() => { setEditingId(item.id); setEditText(item.text) }} className="text-xs px-2.5 py-1 rounded-full bg-white/10 text-white/40 hover:text-white hover:bg-white/15 transition-all">Ред.</button>
+                    <button onClick={() => remove(item.id)} className="text-xs px-2.5 py-1 rounded-full bg-white/10 text-red-400/70 hover:bg-red-500/20 hover:text-red-300 transition-all">✕</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
