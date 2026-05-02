@@ -15,6 +15,13 @@ import { FREE_MESSAGES_LIMIT, PLANS } from '@/lib/stripe'
 import { calcCostUsd } from '@/lib/token-costs'
 import { checkTokenAlerts } from '@/lib/token-alerts'
 
+const ACADEMY_KNOWLEDGE_CODES = [
+  'LUNA:wolf_vision',
+  'ARCAS:shaman_card',
+  'NUMI:cycle_nine',
+  'UMBRA:beekeeper_shadow',
+] as const
+
 const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
   LUNA: 'Зірки зараз мовчать... Відчуваю перешкоду в каналі. Спробуй звернутись до мене трохи пізніше 🌙',
   ARCAS: 'Карти перевернулись. Щось заважає з\'єднанню — повернись за хвилину 🃏',
@@ -310,26 +317,25 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
     const profile = await db.profile.findUnique({ where: { userId } })
 
     // --- Академія Лумара: оновлення рівня розкриття ---
-    if (profile && profile.academyDisclosureLevel < 3) {
-      const shouldUpdate = await (async () => {
-        if (profile.academyDisclosureLevel < 2) {
-          const totalUserMessages = await db.message.count({
-            where: { role: 'USER', conversation: { userId } },
-          })
-          return totalUserMessages >= 8
-        }
-        if (profile.academyDisclosureLevel < 3) {
-          const distinctAgents = await db.conversation.groupBy({
-            by: ['agentId'],
-            where: { userId },
-          })
-          return distinctAgents.length >= 2
-        }
-        return false
-      })()
-
-      if (shouldUpdate) {
-        const newLevel = profile.academyDisclosureLevel < 2 ? 2 : 3
+    let disclosureLevel = profile?.academyDisclosureLevel ?? 0
+    if (profile) {
+      let newLevel = disclosureLevel
+      if (newLevel < 1) newLevel = 1  // авторизований = мінімум рівень 1
+      if (newLevel < 2) {
+        const totalUserMessages = await db.message.count({
+          where: { role: 'USER', conversation: { userId } },
+        })
+        if (totalUserMessages >= 8) newLevel = 2
+      }
+      if (newLevel < 3) {
+        const distinctAgents = await db.conversation.groupBy({
+          by: ['agentId'],
+          where: { userId },
+        })
+        if (distinctAgents.length >= 2) newLevel = 3
+      }
+      if (newLevel !== disclosureLevel) {
+        disclosureLevel = newLevel
         db.profile.update({
           where: { userId },
           data: { academyDisclosureLevel: newLevel },
@@ -361,7 +367,6 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
     })
     const announcementCtx = await buildAnnouncementContext(userId, agentType, userExchanges)
 
-    const disclosureLevel = profile?.academyDisclosureLevel ?? 0
     let gossipContext: string | undefined
     if (disclosureLevel >= 1) {
       const gossips = await db.academyGossip.findMany({
@@ -442,6 +447,18 @@ export async function POST(req: NextRequest, { params }: { params: { agent: stri
             lastAnnouncementExchange: announcementCtx.currentExchanges,
           },
         }).catch(() => {})
+      }
+
+      // Фіксуємо розкриті коди знання rector-а
+      const revealedCode = ACADEMY_KNOWLEDGE_CODES.find(code => responseText.includes(code))
+      if (revealedCode && profile) {
+        const current = (profile.academyRevealedBy as string[]) ?? []
+        if (!current.includes(revealedCode)) {
+          db.profile.update({
+            where: { userId },
+            data: { academyRevealedBy: [...current, revealedCode] },
+          }).catch(() => {})
+        }
       }
 
     } catch (apiErr) {
