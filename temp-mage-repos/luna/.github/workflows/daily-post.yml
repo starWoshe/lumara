@@ -20,6 +20,12 @@ jobs:
           cache: 'pip'
           cache-dependency-path: packages/agents/luna/scripts/requirements.txt
       - run: pip install -r packages/agents/luna/scripts/requirements.txt
+      - name: Діагностика Telegram токена
+        run: |
+          echo "=== Telegram token diagnostics ==="
+          curl -s "https://api.telegram.org/bot${{ secrets.LUNA_TELEGRAM_BOT_TOKEN }}/getMe" || echo "LUNA_TELEGRAM_BOT_TOKEN: failed"
+          curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/getMe" || echo "TELEGRAM_BOT_TOKEN: failed"
+          echo "==================================="
       - run: python packages/agents/luna/scripts/telegram_bot.py
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
