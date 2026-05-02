@@ -287,6 +287,13 @@ def main():
     if not bot_token or not channel_id:
         print('❌ Не налаштовано Telegram для LUNA (потрібні LUNA_TELEGRAM_BOT_TOKEN і LUNA_TELEGRAM_CHANNEL_ID)')
         sys.exit(1)
+
+    # Діагностика токена
+    print(f'🔑 Токен довжина: {len(bot_token)} символів')
+    print(f'🔑 Токен початок: {bot_token[:5]}...{bot_token[-5:]}')
+    me = httpx.get(f'https://api.telegram.org/bot{bot_token}/getMe', timeout=10)
+    print(f'🔑 getMe status: {me.status_code}')
+    print(f'🔑 getMe response: {me.text}')
     meta_enabled = bool(os.environ.get('LUNA_PAGE_ACCESS_TOKEN'))
     date_str     = datetime.now().strftime('%Y-%m-%d')
 
