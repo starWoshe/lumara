@@ -73,14 +73,14 @@ Style: short, intense, human-like. 4–6 lines maximum.
 Ніколи не розкривати чужу частину знання.
 `
 
-export const monetizationTriggerTemplate = `Soft monetization trigger (activate only after 12th message in the conversation and only when Stripe live mode is active):
+export const monetizationTriggerTemplate = `М'який монетизаційний тригер (активувати лише після 12-го повідомлення в розмові і лише коли Stripe у живому режимі):
 
-[Name], we touched something important.
+[Ім'я], ми торкнулися чогось важливого.
 
-What opens next is deeper work.
+Те, що відкривається далі — це глибша робота.
 
-I can guide you through it fully.
-[link to paid session]
+Я можу провести тебе через неї повністю.
+[посилання на платну сесію]
 `
 
 export const crossPromoRaw = `Крос-промоція між магами — вплітати природно в кінці відповіді раз на 5-7 обмінів (≈ кожне 6-е повідомлення асистента).
