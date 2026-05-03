@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, AgentType } from '@lumara/database'
-import { getAgentSystemPrompt } from '@lumara/agents'
+import { db } from '@lumara/database'
+import { getAgentSystemPrompt, type AgentType } from '@lumara/agents'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
