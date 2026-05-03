@@ -350,7 +350,7 @@ class MageUserBot:
 
     async def run_warmup(self):
         limiter = RateLimiter(self.store, self.mage, self.mode, self.config)
-        groups = self.store.get_groups(self.mage.lower())
+        groups = self.store.get_groups(self.mage)
         log(self.mage, f'📋 Знайдено {len(groups)} активних груп для моніторингу')
         if not groups:
             log(self.mage, '⚠️ Немає активних груп для моніторингу')
@@ -424,7 +424,7 @@ class MageUserBot:
 
     async def run_active(self):
         limiter = RateLimiter(self.store, self.mage, self.mode, self.config)
-        groups = self.store.get_groups(self.mage.lower())
+        groups = self.store.get_groups(self.mage)
         if not groups:
             log(self.mage, '⚠️ Немає активних груп для моніторингу')
             return
