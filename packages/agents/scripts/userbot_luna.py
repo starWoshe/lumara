@@ -260,7 +260,7 @@ class SupabaseStore:
         today_start = (
             datetime.now(timezone.utc)
             .replace(hour=0, minute=0, second=0, microsecond=0)
-            .isoformat()
+            .strftime('%Y-%m-%dT%H:%M:%S')
         )
         try:
             r = httpx.get(
@@ -270,9 +270,9 @@ class SupabaseStore:
             )
             if r.status_code == 200:
                 return len(r.json())
-        except Exception:
-            pass
-        return 999
+        except Exception as e:
+            log(mage, f'⚠️ Помилка count_actions_today: {e}')
+        return 0
 
     def is_mage_enabled(self, mage: str) -> bool:
         """Читає admin_settings: userbot_{mage}_enabled. За замовч. True."""
