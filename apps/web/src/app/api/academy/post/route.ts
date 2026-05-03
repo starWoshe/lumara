@@ -63,6 +63,29 @@ function getWeekRotation(): number {
   return ((weeks % 4) + 4) % 4 // гарантовано додатнє
 }
 
+async function verifyTelegramChat(): Promise<void> {
+  if (!process.env.TELEGRAM_BOT_TOKEN) {
+    throw new Error('TELEGRAM_BOT_TOKEN не налаштовано')
+  }
+
+  // Перевіряємо що бот має доступ до каналу перед відправкою
+  const res = await fetch(`${TELEGRAM_API}/getChat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: ACADEMY_CHANNEL_ID }),
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Telegram chat verification failed: ${err}`)
+  }
+
+  const data = await res.json()
+  if (!data.ok) {
+    throw new Error(`Telegram chat not found or bot is not a member: ${JSON.stringify(data)}`)
+  }
+}
+
 async function sendTelegramMessage(text: string): Promise<void> {
   if (!process.env.TELEGRAM_BOT_TOKEN) {
     throw new Error('TELEGRAM_BOT_TOKEN не налаштовано')
@@ -266,6 +289,9 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Спочатку перевіримо що бот має доступ до каналу
+    await verifyTelegramChat()
+
     let result: string
     switch (day) {
       case 'monday':

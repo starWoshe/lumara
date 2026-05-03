@@ -39,27 +39,49 @@ jobs:
           echo "day=$DAY" >> "$GITHUB_OUTPUT"
           echo "День публікації: $DAY"
 
-      - name: Опублікувати пост через API
+      - name: Опублікувати пост через API (з retry)
         if: steps.day.outputs.day != 'unknown'
         run: |
-          HTTP_CODE=$(curl -sSL -w "%{http_code}" -X GET \
-            "https://lumara.fyi/api/academy/post?day=${{ steps.day.outputs.day }}" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Accept: application/json" \
-            --max-time 60 \
-            -o response.json)
+          API_URL="https://lumara.fyi/api/academy/post?day=${{ steps.day.outputs.day }}"
+          AUTH="Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          MAX_RETRIES=3
+          DELAYS=(0 5 15)
+          SUCCESS=false
 
-          echo "HTTP код: $HTTP_CODE"
-          cat response.json
+          for i in $(seq 1 $MAX_RETRIES); do
+            if [ $i -gt 1 ]; then
+              echo "⏳ Повторна спроба $i/${MAX_RETRIES} через ${DELAYS[$((i-1))]} секунд..."
+              sleep ${DELAYS[$((i-1))]}
+            fi
 
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "Помилка API: HTTP $HTTP_CODE"
-            exit 1
-          fi
+            HTTP_CODE=$(curl -sSL -w "%{http_code}" -X GET \
+              "$API_URL" \
+              -H "$AUTH" \
+              -H "Accept: application/json" \
+              --max-time 60 \
+              -o response.json)
 
-          # Перевіряємо що відповідь ok
-          if [ "$(jq -r '.ok' response.json)" != "true" ]; then
-            echo "Помилка публікації посту академії"
+            echo "HTTP код (спроба $i): $HTTP_CODE"
+            cat response.json
+            echo ""
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              OK=$(jq -r '.ok' response.json)
+              if [ "$OK" = "true" ]; then
+                echo "✅ Пост успішно опубліковано"
+                SUCCESS=true
+                break
+              else
+                ERROR=$(jq -r '.error // "unknown"' response.json)
+                echo "⚠️ API повернув ok=false: $ERROR"
+              fi
+            else
+              echo "⚠️ HTTP $HTTP_CODE — буде повторна спроба"
+            fi
+          done
+
+          if [ "$SUCCESS" != "true" ]; then
+            echo "❌ Усі $MAX_RETRIES спроби провалились"
             exit 1
           fi
 
