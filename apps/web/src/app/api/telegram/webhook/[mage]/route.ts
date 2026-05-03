@@ -123,7 +123,13 @@ async function updateUserContext(
 export async function POST(req: NextRequest, { params }: { params: { mage: string } }) {
   // Перевіряємо секретний токен від Telegram
   const secretToken = req.headers.get('x-telegram-bot-api-secret-token')
-  if (secretToken !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+  const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
+
+  // Тимчасове логування для дебагу
+  console.log(`[webhook debug] mage=${params.mage}, hasSecretHeader=${!!secretToken}, hasEnvSecret=${!!expectedSecret}, match=${secretToken === expectedSecret}`)
+
+  if (secretToken !== expectedSecret) {
+    console.error(`[webhook] Unauthorized: mage=${params.mage}, header=${secretToken?.slice(0, 8)}..., env=${expectedSecret?.slice(0, 8)}...`)
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
   }
 
