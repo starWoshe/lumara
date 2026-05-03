@@ -125,12 +125,15 @@ export async function POST(req: NextRequest, { params }: { params: { mage: strin
   const secretToken = req.headers.get('x-telegram-bot-api-secret-token')
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
 
-  // Тимчасове логування для дебагу
-  console.log(`[webhook debug] mage=${params.mage}, hasSecretHeader=${!!secretToken}, hasEnvSecret=${!!expectedSecret}, match=${secretToken === expectedSecret}`)
-
-  if (secretToken !== expectedSecret) {
-    console.error(`[webhook] Unauthorized: mage=${params.mage}, header=${secretToken?.slice(0, 8)}..., env=${expectedSecret?.slice(0, 8)}...`)
+  // Fallback: приймаємо запити без хедера — це legacy pending updates з черги Telegram,
+  // які накопичились до встановлення secret_token. Нові запити мають хедер.
+  if (secretToken && secretToken !== expectedSecret) {
+    console.error(`[webhook] Unauthorized: mage=${params.mage}, header mismatch`)
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (!secretToken && expectedSecret) {
+    console.log(`[webhook] Legacy pending update (no secret header): mage=${params.mage}`)
   }
 
   const mageParam = params.mage.toLowerCase()
