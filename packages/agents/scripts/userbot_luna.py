@@ -110,7 +110,7 @@ MAGE_CONFIGS = {
         ],
     },
     'ACADEMY': {
-        'reaction_emojis': ['🔮', '✨', '🌟', '💫', '🕯️'],
+        'reaction_emojis': ['👍', '❤️', '🔥', '😍', '👏'],
         'min_reaction_pause_min': 30,
         'max_reaction_pause_min': 120,
         'min_message_pause_min': 40,
@@ -393,16 +393,39 @@ class MageUserBot:
                 preview = (msg.text or '')[:100]
 
                 log(self.mage, f'👀 Обрано повідомлення ("{preview[:40]}...") для реакції {emoji}')
-                await self.client(SendReactionRequest(
-                    peer=entity,
-                    msg_id=msg.id,
-                    reaction=[types.ReactionEmoji(emoticon=emoji)],
-                ))
-                reactions_done += 1
-                self.store.log_action(
-                    self.mage, 'REACTION', username, preview, {'emoji': emoji}
-                )
-                log(self.mage, f'❤️ Реакція {emoji} в @{username} — ✅ УСПІХ')
+                try:
+                    await self.client(SendReactionRequest(
+                        peer=entity,
+                        msg_id=msg.id,
+                        reaction=[types.ReactionEmoji(emoticon=emoji)],
+                    ))
+                    reactions_done += 1
+                    self.store.log_action(
+                        self.mage, 'REACTION', username, preview, {'emoji': emoji}
+                    )
+                    log(self.mage, f'❤️ Реакція {emoji} в @{username} — ✅ УСПІХ')
+                except Exception as react_err:
+                    err_text = str(react_err)
+                    if 'Invalid reaction' in err_text:
+                        # Fallback: try basic thumbs up
+                        try:
+                            await self.client(SendReactionRequest(
+                                peer=entity,
+                                msg_id=msg.id,
+                                reaction=[types.ReactionEmoji(emoticon='👍')],
+                            ))
+                            reactions_done += 1
+                            self.store.log_action(
+                                self.mage, 'REACTION', username, preview, {'emoji': '👍', 'original_emoji': emoji}
+                            )
+                            log(self.mage, f'❤️ Реакція 👍 (fallback) в @{username} — ✅ УСПІХ')
+                        except Exception as fallback_err:
+                            if 'Invalid reaction' in str(fallback_err):
+                                log(self.mage, f'⏭️ Група @{username} не підтримує реакції')
+                            else:
+                                raise
+                    else:
+                        raise
 
                 # Оновлюємо last_visited
                 self._update_group_last_visited(username)
