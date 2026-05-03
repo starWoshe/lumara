@@ -2,36 +2,31 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    # 3 рази на день: 08:00, 14:00, 20:00 UTC — до/після Vercel cron
+    # 6 разів на день: кожні 4 години — надійний keep-alive
+    - cron: '0 0 * * *'
+    - cron: '0 4 * * *'
     - cron: '0 8 * * *'
-    - cron: '0 14 * * *'
+    - cron: '0 12 * * *'
+    - cron: '0 16 * * *'
     - cron: '0 20 * * *'
   workflow_dispatch:
 
 jobs:
   ping:
-    name: Ping /api/health
+    name: Ping Supabase
     runs-on: ubuntu-latest
     steps:
-      - name: Штурхнути Supabase (з retry)
+      - name: Штурхнути Supabase через /api/health/cron (без авторизації)
         run: |
           MAX_RETRIES=3
           RETRY_DELAY=30
 
-          SECRET_LEN=${#CRON_SECRET}
-          if [ "$SECRET_LEN" -eq 0 ]; then
-            echo "⚠️ CRON_SECRET не встановлено в GitHub Secrets!"
-          else
-            echo "✅ CRON_SECRET встановлено (довжина: $SECRET_LEN символів)"
-          fi
-
           for i in $(seq 1 $MAX_RETRIES); do
             echo "Attempt $i/$MAX_RETRIES..."
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
               -H "Accept: application/json" \
               --max-time 30 \
-              "https://lumara.fyi/api/health")
+              "https://lumara.fyi/api/health/cron")
 
             if [ "$HTTP_CODE" = "200" ]; then
               echo "✅ Supabase is alive (HTTP 200)"
@@ -47,6 +42,29 @@ jobs:
 
           echo "❌ All attempts failed. Supabase may need manual unpause."
           exit 1
+
+      - name: Backup ping через /api/health (з CRON_SECRET)
+        if: failure()
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "🔄 Backup ping через /api/health..."
+          if [ -z "$CRON_SECRET" ]; then
+            echo "⚠️ CRON_SECRET не встановлено, backup ping пропущено"
+            exit 1
+          fi
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Accept: application/json" \
+            --max-time 30 \
+            "https://lumara.fyi/api/health")
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Backup ping успішний (HTTP 200)"
+            exit 0
+          else
+            echo "❌ Backup ping failed: HTTP $HTTP_CODE"
+            exit 1
+          fi
 
       - name: Telegram алерт при збої
         if: failure()

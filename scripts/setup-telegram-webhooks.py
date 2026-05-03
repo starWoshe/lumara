@@ -15,6 +15,7 @@
 import os
 import sys
 import secrets
+import string
 import urllib.parse
 from pathlib import Path
 
@@ -45,9 +46,22 @@ MAGES = [
 ]
 
 
+def validate_token(bot_token: str) -> dict:
+    """Перевіряє токен через getMe. Повертає {'ok': True, ...} або {'ok': False, 'error': ...}."""
+    try:
+        r = httpx.get(f'https://api.telegram.org/bot{bot_token}/getMe', timeout=10)
+        data = r.json()
+        if data.get('ok'):
+            return {'ok': True, 'username': data['result'].get('username')}
+        return {'ok': False, 'error': data.get('description', 'Unknown error')}
+    except Exception as e:
+        return {'ok': False, 'error': str(e)}
+
+
 def generate_secret() -> str:
-    """Генерує випадковий секретний токен (32 байти → base64 ≈ 44 символи)."""
-    return secrets.token_urlsafe(32)
+    """Генерує випадковий секретний токен (тільки A-Z, a-z, 0-9, _, -)."""
+    alphabet = string.ascii_letters + string.digits + '_-'
+    return ''.join(secrets.choice(alphabet) for _ in range(44))
 
 
 def set_webhook(bot_token: str, mage: str, secret_token: str) -> dict:
@@ -85,13 +99,17 @@ def main():
     print("🔮 Налаштування Telegram webhooks для LUMARA")
     print("=" * 60)
 
-    # Збираємо токени
+    # Збираємо токени (з fallback на TELEGRAM_BOT_TOKEN)
     tokens = {}
     missing = []
+    fallback_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
     for mage, env_name in MAGES:
         token = os.environ.get(env_name)
         if token:
             tokens[mage] = token
+        elif fallback_token:
+            print(f"   ⚠️ {env_name} не знайдено, використовую TELEGRAM_BOT_TOKEN як fallback")
+            tokens[mage] = fallback_token
         else:
             missing.append(env_name)
 
@@ -102,10 +120,17 @@ def main():
 
     # Перевіряємо чи вже є TELEGRAM_WEBHOOK_SECRET
     existing_secret = os.environ.get('TELEGRAM_WEBHOOK_SECRET')
+    allowed_chars = set(string.ascii_letters + string.digits + '_-')
     if existing_secret:
-        print(f"\n⚠️ Знайдено TELEGRAM_WEBHOOK_SECRET у .env.local")
-        print(f"   Використовую його для встановлення webhooks.")
-        secret_token = existing_secret
+        if not set(existing_secret).issubset(allowed_chars):
+            print(f"\n⚠️ Знайдено TELEGRAM_WEBHOOK_SECRET у .env.local, але він містить неприпустимі символи!")
+            print(f"   Telegram дозволяє тільки: A-Z, a-z, 0-9, _, -")
+            print(f"   Згенерую новий валідний секрет.")
+            secret_token = generate_secret()
+        else:
+            print(f"\n⚠️ Знайдено TELEGRAM_WEBHOOK_SECRET у .env.local")
+            print(f"   Використовую його для встановлення webhooks.")
+            secret_token = existing_secret
     else:
         secret_token = generate_secret()
         print(f"\n🔐 Згенеровано новий секретний токен:")
@@ -121,6 +146,14 @@ def main():
         print(f"\n🌟 {mage.upper()}")
         token_preview = tokens[mage][:10] + "..." + tokens[mage][-5:]
         print(f"   Токен: {token_preview}")
+
+        # Перевіряємо токен перед setWebhook
+        me = validate_token(tokens[mage])
+        if not me['ok']:
+            print(f"   ❌ Токен невірний ({me['error']}). Перевір через @BotFather і онови {env_name}")
+            all_ok = False
+            continue
+        print(f"   ✅ Токен валідний (@{me['username']})")
 
         result = set_webhook(tokens[mage], mage, secret_token)
         if result.get("ok"):

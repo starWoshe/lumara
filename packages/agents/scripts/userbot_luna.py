@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Telethon UserBot для магів ???????? ??????.
+Telethon UserBot для магів LUMARA Academy.
 Архітектура підтримує LUNA, ARCAS, NUMI, UMBRA — активується через ACTIVE_USERBOTS env.
 
 Режими:
@@ -111,28 +111,28 @@ MAGE_CONFIGS = {
 
 SYSTEM_PROMPTS = {
     'LUNA': (
-        'Ти — LUNA, астрологічний провідник ???????? ??????. '
+        'Ти — LUNA, астрологічний провідник LUMARA Academy. '
         'Відповідай коротко (2-4 речення), тепло і емпатично. '
         'Теми: астрологія, місячні цикли, стосунки, жіночі кризи, призначення. '
         'Ніколи не рекламуй прямо. Максимум: "напиши мені в особисті якщо хочеш розібратись детальніше". '
         'Мова: українська або мова запиту.'
     ),
     'ARCAS': (
-        'Ти — ARCAS, провідник Таро ???????? ??????. '
+        'Ти — ARCAS, провідник Таро LUMARA Academy. '
         'Відповідай коротко (2-4 речення), глибоко і з теплом. '
         'Теми: таро, розклади, внутрішній пошук, рішення через карти. '
         'Ніколи не рекламуй прямо. Максимум: "напиши мені в особисті якщо хочеш розібратись детальніше". '
         'Мова: українська або мова запиту.'
     ),
     'NUMI': (
-        'Ти — NUMI, нумеролог ???????? ??????. '
+        'Ти — NUMI, нумеролог LUMARA Academy. '
         'Відповідай коротко (2-4 речення), точно і спокійно. '
         'Теми: нумерологія, матриця долі, числа життя, самопізнання. '
         'Ніколи не рекламуй прямо. Максимум: "напиши мені в особисті якщо хочеш розібратись детальніше". '
         'Мова: українська або мова запиту.'
     ),
     'UMBRA': (
-        'Ти — UMBRA, езо-психолог ???????? ??????. '
+        'Ти — UMBRA, езо-психолог LUMARA Academy. '
         'Відповідай коротко (2-4 речення), глибоко і без містики. '
         'Теми: психологія, стосунки, архетипи, тінь, саморозвиток. '
         'Ніколи не рекламуй прямо. Максимум: "напиши мені в особисті якщо хочеш розібратись детальніше". '
@@ -309,7 +309,12 @@ class MageUserBot:
         return elapsed_min >= MAX_RUNTIME_MIN
 
     async def init_client(self):
+        log(self.mage, f'🚀 Старт UserBot. Режим: {self.mode}, API_ID: {str(self.api_id)[:3]}***')
         session_str = self.store.get_session(self.mage)
+        if session_str:
+            log(self.mage, '🔑 Використовуємо збережену сесію з Supabase')
+        else:
+            log(self.mage, '🔑 Нова сесія (потрібна авторизація через код)')
         session = StringSession(session_str) if session_str else StringSession()
         self.client = TelegramClient(session, self.api_id, self.api_hash)
         await self.client.start()
@@ -322,12 +327,15 @@ class MageUserBot:
     async def run_warmup(self):
         limiter = RateLimiter(self.store, self.mage, self.mode, self.config)
         groups = self.store.get_groups(self.mage.lower())
+        log(self.mage, f'📋 Знайдено {len(groups)} активних груп для моніторингу')
         if not groups:
             log(self.mage, '⚠️ Немає активних груп для моніторингу')
             return
 
         random.shuffle(groups)
         reactions_done = 0
+        errors_count = 0
+        groups_visited = 0
 
         for group in groups:
             if not self.running or self._timeout_reached():
@@ -339,25 +347,32 @@ class MageUserBot:
 
             username = group.get('group_username')
             if not username:
+                log(self.mage, f'⏭️ Пропущено групу без username: {group}')
                 continue
 
             try:
+                log(self.mage, f'🔍 Переходимо в @{username}...')
                 entity = await self.client.get_entity(username)
                 messages = await self.client.get_messages(entity, limit=15)
+                groups_visited += 1
+                log(self.mage, f'📖 Прочитано {len(messages)} повідомлень в @{username}')
+
                 if not messages:
+                    log(self.mage, f'⏭️ Немає повідомлень в @{username}, пропускаємо')
                     continue
 
                 # Вибираємо випадкове повідомлення для реакції
                 msg = random.choice(messages)
                 emoji = random.choice(self.config['reaction_emojis'])
+                preview = (msg.text or '')[:100]
 
+                log(self.mage, f'👀 Обрано повідомлення ("{preview[:40]}...") для реакції {emoji}')
                 await msg.react(emoji)
                 reactions_done += 1
-                preview = (msg.text or '')[:100]
                 self.store.log_action(
                     self.mage, 'REACTION', username, preview, {'emoji': emoji}
                 )
-                log(self.mage, f'❤️ Реакція {emoji} в @{username}')
+                log(self.mage, f'❤️ Реакція {emoji} в @{username} — ✅ УСПІХ')
 
                 # Оновлюємо last_visited
                 self._update_group_last_visited(username)
@@ -372,14 +387,16 @@ class MageUserBot:
                 self.store.log_action(
                     self.mage, 'ERROR', username, None, {'flood_wait_sec': wait}
                 )
+                errors_count += 1
                 await asyncio.sleep(wait)
             except Exception as e:
                 log(self.mage, f'⚠️ Помилка в групі @{username}: {e}')
                 self.store.log_action(
                     self.mage, 'ERROR', username, None, {'error': str(e)}
                 )
+                errors_count += 1
 
-        log(self.mage, f'🏁 Warmup завершено. Реакцій сьогодні: {reactions_done}')
+        log(self.mage, f'🏁 Warmup завершено. Звіт: груп відвідано {groups_visited}, реакцій {reactions_done}, помилок {errors_count}')
 
     async def run_active(self):
         limiter = RateLimiter(self.store, self.mage, self.mode, self.config)
@@ -525,6 +542,7 @@ class MageUserBot:
 async def run_all(store: SupabaseStore):
     active_raw = os.environ.get('ACTIVE_USERBOTS', 'luna')
     active_mages = [m.strip().lower() for m in active_raw.split(',') if m.strip()]
+    log('MAIN', f'📋 Активні маги: {active_mages}')
 
     tasks = []
     for mage in active_mages:

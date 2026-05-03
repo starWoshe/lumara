@@ -40,24 +40,38 @@ jobs:
       - name: Запустити UserBot
         env:
           USERBOT_ENABLED: ${{ secrets.USERBOT_ENABLED || 'true' }}
-          ACTIVE_USERBOTS: ${{ secrets.ACTIVE_USERBOTS || 'luna' }}
+          ACTIVE_USERBOTS: 'luna'
           LUNA_USERBOT_MODE: ${{ secrets.LUNA_USERBOT_MODE || 'warmup' }}
           LUNA_API_ID: ${{ secrets.LUNA_API_ID }}
           LUNA_API_HASH: ${{ secrets.LUNA_API_HASH }}
-          ARCAS_USERBOT_MODE: ${{ secrets.ARCAS_USERBOT_MODE || 'warmup' }}
-          ARCAS_API_ID: ${{ secrets.ARCAS_API_ID }}
-          ARCAS_API_HASH: ${{ secrets.ARCAS_API_HASH }}
-          NUMI_USERBOT_MODE: ${{ secrets.NUMI_USERBOT_MODE || 'warmup' }}
-          NUMI_API_ID: ${{ secrets.NUMI_API_ID }}
-          NUMI_API_HASH: ${{ secrets.NUMI_API_HASH }}
-          UMBRA_USERBOT_MODE: ${{ secrets.UMBRA_USERBOT_MODE || 'warmup' }}
-          UMBRA_API_ID: ${{ secrets.UMBRA_API_ID }}
-          UMBRA_API_HASH: ${{ secrets.UMBRA_API_HASH }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           python packages/agents/scripts/userbot_luna.py
+
+      - name: Звіт UserBot
+        if: always()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "📊 USERBOT ЗВІТ"
+          echo "================"
+          python -c "
+import os, json, urllib.request
+url = os.environ['SUPABASE_URL'] + '/rest/v1/userbot_logs?mage=eq.LUNA&order=created_at.desc&limit=20&select=action,group_username,message_preview,created_at'
+req = urllib.request.Request(url, headers={'apikey': os.environ['SUPABASE_SERVICE_ROLE_KEY'], 'Authorization': 'Bearer ' + os.environ['SUPABASE_SERVICE_ROLE_KEY']})
+try:
+    data = json.loads(urllib.request.urlopen(req).read())
+    print(f'Останні {len(data)} дій LUNA:')
+    for row in data:
+        ts = row['created_at'][:19].replace('T',' ')
+        print(f'  {ts} | {row['action']:10} | @{row.get('group_username','—'):20} | {row.get('message_preview','')[:50]}')
+except Exception as e:
+    print(f'Помилка звіту: {e}')
+          "
+          echo "================"
 
       - name: Telegram алерт при збої
         if: failure()

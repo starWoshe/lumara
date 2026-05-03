@@ -242,3 +242,11 @@ export async function POST(req: NextRequest, { params }: { params: { mage: strin
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 })
   }
 }
+
+export async function GET(req: NextRequest, { params }: { params: { mage: string } }) {
+  const mageParam = params.mage.toLowerCase()
+  if (!VALID_MAGES.includes(mageParam)) {
+    return NextResponse.json({ ok: false, error: 'Unknown mage' }, { status: 400 })
+  }
+  return NextResponse.json({ ok: true, mage: mageParam, webhook: true })
+}
