@@ -168,11 +168,16 @@ jobs:
             local sha
             sha=$(gh api "repos/$REPO/contents/$dst" --jq '.sha' 2>/dev/null || true)
             if [ -n "$sha" ]; then
-              gh api --method DELETE "repos/$REPO/contents/$dst" \
-                -f message="$msg" \
-                -f sha="$sha" \
-                -f branch="main"
-              echo "  ✅ Deleted orphaned $dst"
+              local payload
+              payload=$(jq -n \
+                --arg msg "$msg" \
+                --arg sha "$sha" \
+                '{message: $msg, sha: $sha, branch: "main"}')
+              if echo "$payload" | gh api --method DELETE "repos/$REPO/contents/$dst" --input - >/dev/null 2>&1; then
+                echo "  ✅ Deleted orphaned $dst"
+              else
+                echo "  ⚠️ Failed to delete $dst (may already be gone)"
+              fi
             else
               echo "  ℹ️ $dst not found, skipping"
             fi
