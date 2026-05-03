@@ -40,10 +40,13 @@ jobs:
       - name: Запустити UserBot
         env:
           USERBOT_ENABLED: ${{ secrets.USERBOT_ENABLED || 'true' }}
-          ACTIVE_USERBOTS: 'luna'
+          ACTIVE_USERBOTS: ${{ secrets.ACTIVE_USERBOTS || 'luna,academy' }}
           LUNA_USERBOT_MODE: ${{ secrets.LUNA_USERBOT_MODE || 'warmup' }}
           LUNA_API_ID: ${{ secrets.LUNA_API_ID }}
           LUNA_API_HASH: ${{ secrets.LUNA_API_HASH }}
+          ACADEMY_USERBOT_MODE: ${{ secrets.ACADEMY_USERBOT_MODE || 'warmup' }}
+          ACADEMY_API_ID: ${{ secrets.ACADEMY_API_ID }}
+          ACADEMY_API_HASH: ${{ secrets.ACADEMY_API_HASH }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -55,26 +58,40 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ACTIVE_USERBOTS: ${{ secrets.ACTIVE_USERBOTS || 'luna,academy' }}
         run: |
           echo "📊 USERBOT ЗВІТ"
           echo "================"
           python3 << 'PYEOF'
           import os, json, urllib.request
-          url = os.environ['SUPABASE_URL'] + '/rest/v1/userbot_logs?mage=eq.LUNA&order=created_at.desc&limit=20&select=action,group_username,message_preview,created_at'
-          req = urllib.request.Request(url, headers={'apikey': os.environ['SUPABASE_SERVICE_ROLE_KEY'], 'Authorization': 'Bearer ' + os.environ['SUPABASE_SERVICE_ROLE_KEY']})
-          try:
-              data = json.loads(urllib.request.urlopen(req).read())
-              print("Останні {} дій LUNA:".format(len(data)))
-              for row in data:
-                  ts = row['created_at'][:19].replace('T',' ')
-                  action = row.get('action','')
-                  group = row.get('group_username','—')
-                  preview = (row.get('message_preview') or '')[:50]
-                  print("  {} | {:10} | @{:<20} | {}".format(ts, action, group, preview))
-          except Exception as e:
-              print("Помилка звіту: {}".format(e))
+
+          supabase_url = os.environ['SUPABASE_URL'].rstrip('/')
+          supabase_key = os.environ['SUPABASE_SERVICE_ROLE_KEY']
+          active_raw = os.environ.get('ACTIVE_USERBOTS', 'luna,academy')
+          active_mages = [m.strip().upper() for m in active_raw.split(',') if m.strip()]
+
+          headers = {'apikey': supabase_key, 'Authorization': 'Bearer ' + supabase_key}
+
+          for mage in active_mages:
+              url = f"{supabase_url}/rest/v1/userbot_logs?mage=eq.{mage}&order=created_at.desc&limit=10&select=action,group_username,message_preview,created_at"
+              req = urllib.request.Request(url, headers=headers)
+              try:
+                  data = json.loads(urllib.request.urlopen(req).read())
+                  print(f"\n🤖 {mage} — останні {len(data)} дій:")
+                  if not data:
+                      print("  (немає записів)")
+                      continue
+                  for row in data:
+                      ts = row['created_at'][:19].replace('T',' ')
+                      action = row.get('action','')
+                      group = row.get('group_username','—')
+                      preview = (row.get('message_preview') or '')[:50]
+                      print(f"  {ts} | {action:10} | @{group:<20} | {preview}")
+              except Exception as e:
+                  print(f"\n🤖 {mage} — помилка звіту: {e}")
+
+          print("\n================")
           PYEOF
-          echo "================"
 
       - name: Telegram алерт при збої
         if: failure()
@@ -83,4 +100,3 @@ jobs:
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}/sendMessage" \
             -d "chat_id=@Volodymyr_Shemchuk" \
             -d "text=$TEXT"
-

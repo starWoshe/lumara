@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const MAGES = ['LUNA', 'ARCAS', 'NUMI', 'UMBRA']
+const MAGES = ['LUNA', 'ARCAS', 'NUMI', 'UMBRA', 'ACADEMY']
 
 export async function GET() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL

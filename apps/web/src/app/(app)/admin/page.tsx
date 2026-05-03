@@ -239,8 +239,8 @@ export default function AdminPage() {
       {/* Розбивка по магах */}
       {agentStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          {(['LUNA', 'ARCAS', 'NUMI', 'UMBRA'] as const).map((mage) => {
-            const icons: Record<string, string> = { LUNA: '🌙', ARCAS: '🃏', NUMI: '🔢', UMBRA: '🧠' }
+          {(['LUNA', 'ARCAS', 'NUMI', 'UMBRA', 'ACADEMY'] as const).map((mage) => {
+            const icons: Record<string, string> = { LUNA: '🌙', ARCAS: '🃏', NUMI: '🔢', UMBRA: '🧠', ACADEMY: '🔮' }
             return (
               <StatCard
                 key={mage}
@@ -507,7 +507,7 @@ function FunnelRow({ label, value, max, color }: { label: string; value: number;
 
 // ---- Витрати ----
 
-const AGENT_ICONS: Record<string, string> = { LUNA: '🌙', ARCAS: '🃏', NUMI: '🔢', UMBRA: '🧠' }
+const AGENT_ICONS: Record<string, string> = { LUNA: '🌙', ARCAS: '🃏', NUMI: '🔢', UMBRA: '🧠', ACADEMY: '🔮' }
 const ACTION_TYPE_LABELS: Record<string, string> = {
   chat: 'Чати з юзерами', post: 'Генерація постів',
   monitor: 'Моніторинг груп', video: 'Відео тексти',
@@ -634,7 +634,7 @@ function MagesActivityTable({ items }: { items: MageActivityItem[] }) {
     return <div className="text-white/30 text-center py-20">Активності магів ще немає</div>
   }
 
-  const MAGE_ICONS: Record<string, string> = { LUNA: '🌙', ARCAS: '🃏', NUMI: '🔢', UMBRA: '🧠' }
+  const MAGE_ICONS: Record<string, string> = { LUNA: '🌙', ARCAS: '🃏', NUMI: '🔢', UMBRA: '🧠', ACADEMY: '🔮' }
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
