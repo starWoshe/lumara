@@ -34,6 +34,8 @@ from dotenv import load_dotenv
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.errors import FloodWaitError
+from telethon.tl.functions.messages import SendReactionRequest
+from telethon.tl import types
 import httpx
 import anthropic
 
@@ -391,7 +393,11 @@ class MageUserBot:
                 preview = (msg.text or '')[:100]
 
                 log(self.mage, f'👀 Обрано повідомлення ("{preview[:40]}...") для реакції {emoji}')
-                await msg.react(emoji)
+                await self.client(SendReactionRequest(
+                    peer=entity,
+                    msg_id=msg.id,
+                    reaction=[types.ReactionEmoji(emoticon=emoji)],
+                ))
                 reactions_done += 1
                 self.store.log_action(
                     self.mage, 'REACTION', username, preview, {'emoji': emoji}
