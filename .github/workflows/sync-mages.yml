@@ -182,6 +182,7 @@ jobs:
           delete_file ".github/workflows/daily-luna.yml"  "cleanup: remove orphaned daily-luna"
           delete_file ".github/workflows/daily-numi.yml"  "cleanup: remove orphaned daily-numi"
           delete_file ".github/workflows/daily-umbra.yml" "cleanup: remove orphaned daily-umbra"
+          delete_file ".github/workflows/telegram-monitor.yml" "cleanup: remove orphaned telegram-monitor"
 
       - name: Sync secrets to ${{ matrix.repo }}"
         env:
