@@ -1,0 +1,54 @@
+name: Sync Mage Groups
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Раз на тиждень — неділя о 06:00 UTC
+    - cron: '0 6 * * 0'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  sync-groups:
+    name: Синхронізація груп магів
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: packages/agents/scripts/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r packages/agents/scripts/requirements.txt
+
+      - name: Sync all mage groups
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LUNA_API_ID: ${{ secrets.LUNA_API_ID }}
+          LUNA_API_HASH: ${{ secrets.LUNA_API_HASH }}
+          ARCAS_API_ID: ${{ secrets.ARCAS_API_ID }}
+          ARCAS_API_HASH: ${{ secrets.ARCAS_API_HASH }}
+          NUMI_API_ID: ${{ secrets.NUMI_API_ID }}
+          NUMI_API_HASH: ${{ secrets.NUMI_API_HASH }}
+          UMBRA_API_ID: ${{ secrets.UMBRA_API_ID }}
+          UMBRA_API_HASH: ${{ secrets.UMBRA_API_HASH }}
+          ACADEMY_API_ID: ${{ secrets.ACADEMY_API_ID }}
+          ACADEMY_API_HASH: ${{ secrets.ACADEMY_API_HASH }}
+        run: python sync_mage_groups.py --all
+
+      - name: Telegram alert on failure
+        if: failure()
+        run: |
+          TEXT="🔴 LUMARA ALERT%0A%0AWorkflow: ${{ github.workflow }}%0AСтатус: ПОМИЛКА%0AЧас: $(date '+%Y-%m-%d %H:%M UTC')"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=@Volodymyr_Shemchuk" \
+            -d "text=$TEXT"
