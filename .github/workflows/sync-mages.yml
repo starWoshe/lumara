@@ -161,7 +161,29 @@ jobs:
             ".github/workflows/daily-post.yml" \
             "sync: daily post workflow"
 
-      - name: Sync secrets to ${{ matrix.repo }}
+          # ── Clean up orphaned old daily workflow files ──
+          delete_file() {
+            local dst="$1"
+            local msg="$2"
+            local sha
+            sha=$(gh api "repos/$REPO/contents/$dst" --jq '.sha' 2>/dev/null || true)
+            if [ -n "$sha" ]; then
+              gh api --method DELETE "repos/$REPO/contents/$dst" \
+                -f message="$msg" \
+                -f sha="$sha" \
+                -f branch="main"
+              echo "  ✅ Deleted orphaned $dst"
+            else
+              echo "  ℹ️ $dst not found, skipping"
+            fi
+          }
+
+          delete_file ".github/workflows/daily-arcas.yml" "cleanup: remove orphaned daily-arcas"
+          delete_file ".github/workflows/daily-luna.yml"  "cleanup: remove orphaned daily-luna"
+          delete_file ".github/workflows/daily-numi.yml"  "cleanup: remove orphaned daily-numi"
+          delete_file ".github/workflows/daily-umbra.yml" "cleanup: remove orphaned daily-umbra"
+
+      - name: Sync secrets to ${{ matrix.repo }}"
         env:
           GH_TOKEN: ${{ secrets[matrix.token_secret] }}
           REPO: ${{ matrix.repo }}
