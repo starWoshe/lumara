@@ -46,3 +46,16 @@ next-env.d.ts
 
 graphify-out/
 .claude/settings.local.json
+
+# Temporary dev scripts
+auth_*.py
+sync_mage_groups.py
+list_*_dialogs.py
+test_*.py
+check_*.py
+add_*.py
+userbot_log*.txt
+max_exchanges
+responseText*))
+str
+void

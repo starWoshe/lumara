@@ -1,93 +1,120 @@
 -- =============================================
 -- LUMARA — ОЧИЩЕННЯ БАЗИ ДАНИХ
--- Залишає лише адмін-акаунт, видаляє все інше
--- =============================================
--- КРОК 0: Спочатку переглянь всі акаунти і знайди свій
--- SELECT id, email, role FROM users ORDER BY created_at;
-
--- КРОК 1: Встанови свій email нижче і задай role = ADMIN
--- ⚠️ ЗАМІН 'your@email.com' на свій реальний email
-UPDATE users SET role = 'ADMIN' WHERE email = 'your@email.com';
-
--- КРОК 2: Перевір що правильний акаунт отримав ADMIN
--- SELECT id, email, role FROM users WHERE role = 'ADMIN';
--- Якщо бачиш правильний рядок — продовжуй
-
--- =============================================
--- ВИДАЛЕННЯ ВСІХ РОЗМОВ І ПОВІДОМЛЕНЬ
+-- Залишає адміна (woshem68@gmail.com) БЕЗ ЗМІН
+-- Видаляє лише 3 тестових юзерів та їх дані
+-- ⚠️ DELETE FROM = видалення рядків, НЕ таблиць
 -- =============================================
 
--- Спочатку повідомлення (залежать від conversations)
-DELETE FROM messages;
+-- ЗАЛИШАЄТЬСЯ незмінним:
+--   fdd5eaf7-... woshem68@gmail.com (ADMIN)
 
--- Потім самі розмови
-DELETE FROM conversations;
+-- ВИДАЛЯЄТЬСЯ:
+--   d58484c4-... sharkozal@gmail.com
+--   eadbb9b9-... u92668401@gmail.com
+--   7cd6ec84-... shemchukaga@gmail.com
 
--- =============================================
--- ВИДАЛЕННЯ ВСІХ ДАНИХ НЕАДМІН-КОРИСТУВАЧІВ
--- =============================================
-
--- Підписки
-DELETE FROM subscriptions WHERE user_id NOT IN (
+-- Для зручності — CTE з ID адміна
+WITH admin_ids AS (
   SELECT id FROM users WHERE role = 'ADMIN'
-);
+)
 
--- Записи на курси
-DELETE FROM enrollments WHERE user_id NOT IN (
-  SELECT id FROM users WHERE role = 'ADMIN'
-);
+-- КРОК 1: повідомлення в розмовах неадмінів
+, del_messages AS (
+  DELETE FROM messages
+  WHERE conversation_id IN (
+    SELECT id FROM conversations
+    WHERE user_id NOT IN (SELECT id FROM admin_ids)
+  )
+  RETURNING 1
+)
 
--- Логи активності
-DELETE FROM activity_logs WHERE user_id NOT IN (
-  SELECT id FROM users WHERE role = 'ADMIN'
-);
+-- КРОК 2: розмови неадмінів
+, del_conversations AS (
+  DELETE FROM conversations
+  WHERE user_id NOT IN (SELECT id FROM admin_ids)
+  RETURNING 1
+)
 
--- Стани анонсів
-DELETE FROM announcement_states WHERE user_id NOT IN (
-  SELECT id FROM users WHERE role = 'ADMIN'
-);
+-- КРОК 3: підписки
+, del_subscriptions AS (
+  DELETE FROM subscriptions
+  WHERE user_id NOT IN (SELECT id FROM admin_ids)
+  RETURNING 1
+)
 
--- Сесії OAuth
-DELETE FROM sessions WHERE user_id NOT IN (
-  SELECT id FROM users WHERE role = 'ADMIN'
-);
+-- КРОК 4: записи на курси
+, del_enrollments AS (
+  DELETE FROM enrollments
+  WHERE user_id NOT IN (SELECT id FROM admin_ids)
+  RETURNING 1
+)
 
--- Акаунти OAuth (Google тощо)
-DELETE FROM accounts WHERE user_id NOT IN (
-  SELECT id FROM users WHERE role = 'ADMIN'
-);
+-- КРОК 5: логи активності
+, del_logs AS (
+  DELETE FROM activity_logs
+  WHERE user_id NOT IN (SELECT id FROM admin_ids)
+  RETURNING 1
+)
 
--- Профілі неадмінів
-DELETE FROM profiles WHERE user_id NOT IN (
-  SELECT id FROM users WHERE role = 'ADMIN'
-);
+-- КРОК 6: стани анонсів
+, del_announcements AS (
+  DELETE FROM announcement_states
+  WHERE user_id NOT IN (SELECT id FROM admin_ids)
+  RETURNING 1
+)
 
--- Самі користувачі (неадміни)
-DELETE FROM users WHERE role != 'ADMIN';
+-- КРОК 7: сесії OAuth
+, del_sessions AS (
+  DELETE FROM sessions
+  WHERE user_id NOT IN (SELECT id FROM admin_ids)
+  RETURNING 1
+)
 
--- =============================================
--- ОЧИЩЕННЯ ОПЕРАЦІЙНИХ ТАБЛИЦЬ
--- =============================================
+-- КРОК 8: акаунти OAuth (Google тощо)
+, del_accounts AS (
+  DELETE FROM accounts
+  WHERE user_id NOT IN (SELECT id FROM admin_ids)
+  RETURNING 1
+)
 
-DELETE FROM outreach_responses;
-DELETE FROM referral_clicks;
-DELETE FROM keyword_clicks;
-DELETE FROM token_usage;
-DELETE FROM user_context;
-DELETE FROM telegram_conversations;
+-- КРОК 9: профілі неадмінів
+, del_profiles AS (
+  DELETE FROM profiles
+  WHERE user_id NOT IN (SELECT id FROM admin_ids)
+  RETURNING 1
+)
 
--- =============================================
--- ЗАЛИШАЄТЬСЯ (не чіпаємо):
--- academy_gossip  — контент плітків
--- admin_settings  — конфіг
--- telegram_groups — список груп
--- agents          — конфіг агентів
--- monitor_states  — стан моніторів
--- =============================================
+-- КРОК 10: самі юзери-неадміни
+, del_users AS (
+  DELETE FROM users
+  WHERE role != 'ADMIN'
+  RETURNING 1
+)
 
--- ФІНАЛЬНА ПЕРЕВІРКА
-SELECT 'users' as tbl, count(*) FROM users
-UNION ALL SELECT 'profiles', count(*) FROM profiles
-UNION ALL SELECT 'conversations', count(*) FROM conversations
-UNION ALL SELECT 'messages', count(*) FROM messages
-UNION ALL SELECT 'outreach_responses', count(*) FROM outreach_responses;
+-- Операційні таблиці (не прив'язані до юзерів)
+, del_outreach AS (
+  DELETE FROM outreach_responses RETURNING 1
+)
+, del_referral AS (
+  DELETE FROM referral_clicks RETURNING 1
+)
+, del_keyword AS (
+  DELETE FROM keyword_clicks RETURNING 1
+)
+, del_tokens AS (
+  DELETE FROM token_usage RETURNING 1
+)
+, del_context AS (
+  DELETE FROM user_context RETURNING 1
+)
+, del_tg_conv AS (
+  DELETE FROM telegram_conversations RETURNING 1
+)
+
+-- РЕЗУЛЬТАТ: скільки рядків видалено
+SELECT
+  (SELECT count(*) FROM del_messages)      AS del_messages,
+  (SELECT count(*) FROM del_conversations) AS del_conversations,
+  (SELECT count(*) FROM del_users)         AS del_users,
+  (SELECT count(*) FROM del_profiles)      AS del_profiles,
+  (SELECT count(*) FROM del_outreach)      AS del_outreach;
