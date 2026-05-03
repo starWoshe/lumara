@@ -55,9 +55,9 @@ export async function GET(request: Request) {
     let failed = 0
 
     for (const user of silentUsers) {
-      // Визначаємо мага
-      const agentType: AgentType =
-        user.profile?.lastVisitedAgent ?? 'LUNA'
+      // Визначаємо мага (ACADEMY не має email-конфігу, тому fallback на LUNA)
+      const rawAgent = (user.profile?.lastVisitedAgent ?? 'LUNA') as string
+      const agentType: AgentType = rawAgent === 'ACADEMY' ? 'LUNA' : (rawAgent as AgentType)
 
       try {
         await sendReactivationEmail(
