@@ -30,11 +30,10 @@ jobs:
           FACEBOOK_MAX_PER_DAY: ${{ secrets.FACEBOOK_MAX_PER_DAY || '15' }}
           ACADEMY_FB_PAGE_ID: ${{ secrets.ACADEMY_FB_PAGE_ID }}
           ACADEMY_PAGE_ACCESS_TOKEN: ${{ secrets.ACADEMY_PAGE_ACCESS_TOKEN }}
-
       - name: Telegram алерт при збої
         if: failure()
         run: |
-          TEXT="🔴 LUMARA ALERT%0A%0AWorkflow: Academy FB Monitor%0AСтатус: ПОМИЛКА%0AЧас: $(date '+%Y-%m-%d %H:%M UTC')"
+          TEXT="🔴 LUMARA ALERT%0A%0AWorkflow: Facebook Monitor (Academy)%0AСтатус: ПОМИЛКА%0AЧас: $(date '+%Y-%m-%d %H:%M UTC')"
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}/sendMessage" \
             -d "chat_id=@Volodymyr_Shemchuk" \
             -d "text=$TEXT"
